@@ -25,12 +25,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans h-screen bg-black text-white relative flex overflow-hidden`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans h-screen bg-[#5BB8E8] text-[#26354A] relative flex overflow-hidden`}
       >
-        {/* Background gradient for glassmorphism effect */}
-        <div className="fixed inset-0 z-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-zinc-800 via-black to-black"></div>
+        {/* Playful child-friendly background using the custom palette */}
+        <div className="fixed inset-0 z-0 bg-[#F4FAFE]/80">
+          {/* Yellow glow */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-[#FFD86B]/40 via-transparent to-transparent"></div>
+          {/* Pink and Purple glow */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-stops))] from-[#FF9EB5]/40 via-[#B9A7F9]/20 to-transparent"></div>
+          {/* Primary Blue glow */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_var(--tw-gradient-stops))] from-[#5BB8E8]/30 via-transparent to-transparent"></div>
+          {/* Secondary Green glow */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,_var(--tw-gradient-stops))] from-[#7DD8B5]/30 via-transparent to-transparent"></div>
+        </div>
         
         <Sidebar />
         
