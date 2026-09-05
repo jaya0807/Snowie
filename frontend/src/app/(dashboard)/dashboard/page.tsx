@@ -39,14 +39,14 @@ export default function DashboardHome() {
     <div className="space-y-4 flex flex-col h-[calc(100vh-8rem)]">
       <div className="flex items-center justify-between shrink-0">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#173B50]">Overview</h1>
-          <p className="text-[#668294]">Welcome back! Here's what's happening today.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-brand-dark">Overview</h1>
+          <p className="text-brand-muted">Welcome back! Here's what's happening today.</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => router.push('/reports')} className="bg-[#E7F5FB] text-[#176B9C] border border-[#C9E4F0] px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+          <button onClick={() => router.push('/reports')} className="bg-brand-surface-alt text-brand border border-brand-border px-4 py-2 rounded-lg text-sm font-medium transition-colors">
             Generate Report
           </button>
-          <button onClick={() => router.push('/sessions')} className="bg-[#49B3E8] text-[#FFFFFF] border-none px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#176B9C] transition-colors">
+          <button onClick={() => router.push('/sessions')} className="bg-brand-accent text-white border-none px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand transition-colors">
             Start Session
           </button>
         </div>
@@ -54,16 +54,16 @@ export default function DashboardHome() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 shrink-0">
         {/* Metric 1 */}
-        <Card size="sm" className="bg-[#E0FBFC] border border-[#C9E4F0] shadow-[0_4px_14px_rgba(23,107,156,0.05)]">
+        <Card size="sm" className="glass">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-[#668294]">Total Sessions</CardTitle>
-            <Activity className="w-4 h-4 text-[#176B9C]" />
+            <CardTitle className="text-sm font-medium text-brand-muted">Total Sessions</CardTitle>
+            <Activity className="w-4 h-4 text-brand" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-[#176B9C]">{data.stats.totalSessions.value}</div>
+            <div className="text-2xl font-bold text-brand">{data.stats.totalSessions.value}</div>
             {data.stats.totalSessions.trend !== "Nil" && (
-              <p className="text-xs text-[#668294] mt-1">
-                <span className={`flex items-center inline-flex ${data.stats.totalSessions.isPositive ? 'text-[#78D6B0]' : 'text-[#FF9BAA]'}`}>
+              <p className="text-xs text-brand-muted mt-1">
+                <span className={`flex items-center inline-flex ${data.stats.totalSessions.isPositive ? 'text-success-light' : 'text-danger-light'}`}>
                   {data.stats.totalSessions.isPositive ? <ArrowUpRight className="w-3 h-3 mr-1" /> : <ArrowDownRight className="w-3 h-3 mr-1" />}
                   {data.stats.totalSessions.trend}
                 </span> from last week
@@ -73,16 +73,16 @@ export default function DashboardHome() {
         </Card>
         
         {/* Metric 2 */}
-        <Card size="sm" className="bg-[#E0FBFC] border border-[#C9E4F0] shadow-[0_4px_14px_rgba(23,107,156,0.05)]">
+        <Card size="sm" className="glass">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-[#668294]">Avg. Engagement</CardTitle>
-            <Brain className="w-4 h-4 text-[#176B9C]" />
+            <CardTitle className="text-sm font-medium text-brand-muted">Avg. Engagement</CardTitle>
+            <Brain className="w-4 h-4 text-brand" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-[#176B9C]">{data.stats.avgEngagement.value}</div>
+            <div className="text-2xl font-bold text-brand">{data.stats.avgEngagement.value}</div>
             {data.stats.avgEngagement.trend !== "Nil" && (
-              <p className="text-xs text-[#668294] mt-1">
-                <span className={`flex items-center inline-flex ${data.stats.avgEngagement.isPositive ? 'text-[#78D6B0]' : 'text-[#FF9BAA]'}`}>
+              <p className="text-xs text-brand-muted mt-1">
+                <span className={`flex items-center inline-flex ${data.stats.avgEngagement.isPositive ? 'text-success-light' : 'text-danger-light'}`}>
                   {data.stats.avgEngagement.isPositive ? <ArrowUpRight className="w-3 h-3 mr-1" /> : <ArrowDownRight className="w-3 h-3 mr-1" />}
                   {data.stats.avgEngagement.trend}
                 </span> from last week
@@ -92,16 +92,16 @@ export default function DashboardHome() {
         </Card>
 
         {/* Metric 3 */}
-        <Card size="sm" className="bg-[#E0FBFC] border border-[#C9E4F0] shadow-[0_4px_14px_rgba(23,107,156,0.05)]">
+        <Card size="sm" className="glass">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-[#668294]">Avg. Session Duration</CardTitle>
-            <Clock className="w-4 h-4 text-[#176B9C]" />
+            <CardTitle className="text-sm font-medium text-brand-muted">Avg. Session Duration</CardTitle>
+            <Clock className="w-4 h-4 text-brand" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-[#176B9C]">{data.stats.avgDuration.value}</div>
+            <div className="text-2xl font-bold text-brand">{data.stats.avgDuration.value}</div>
             {data.stats.avgDuration.trend !== "Nil" && (
-              <p className="text-xs text-[#668294] mt-1">
-                <span className={`flex items-center inline-flex ${data.stats.avgDuration.isPositive ? 'text-[#78D6B0]' : 'text-[#FF9BAA]'}`}>
+              <p className="text-xs text-brand-muted mt-1">
+                <span className={`flex items-center inline-flex ${data.stats.avgDuration.isPositive ? 'text-success-light' : 'text-danger-light'}`}>
                   {data.stats.avgDuration.isPositive ? <ArrowUpRight className="w-3 h-3 mr-1" /> : <ArrowDownRight className="w-3 h-3 mr-1" />}
                   {data.stats.avgDuration.trend}
                 </span> from last week
@@ -111,15 +111,15 @@ export default function DashboardHome() {
         </Card>
 
         {/* Metric 4 */}
-        <Card size="sm" className="bg-[#E0FBFC] border border-[#C9E4F0] shadow-[0_4px_14px_rgba(23,107,156,0.05)]">
+        <Card size="sm" className="glass">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-[#668294]">Goal Achievement</CardTitle>
-            <Target className="w-4 h-4 text-[#176B9C]" />
+            <CardTitle className="text-sm font-medium text-brand-muted">Goal Achievement</CardTitle>
+            <Target className="w-4 h-4 text-brand" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-[#176B9C] mb-2">{data.stats.goalAchievement.value === 0 ? "Nil" : `${data.stats.goalAchievement.value}%`}</div>
+            <div className="text-2xl font-bold text-brand mb-2">{data.stats.goalAchievement.value === 0 ? "Nil" : `${data.stats.goalAchievement.value}%`}</div>
             {data.stats.goalAchievement.value > 0 && (
-              <Progress value={data.stats.goalAchievement.value as number} className="h-1.5 bg-white [&_[data-slot=progress-indicator]]:bg-[#78D6B0]" />
+              <Progress value={data.stats.goalAchievement.value as number} className="h-1.5 bg-white [&_[data-slot=progress-indicator]]:bg-success-light" />
             )}
           </CardContent>
         </Card>
@@ -127,9 +127,9 @@ export default function DashboardHome() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-[400px]">
         {/* Main Chart */}
-        <Card size="sm" className="lg:col-span-2 bg-[#E0FBFC] border border-[#C9E4F0] shadow-[0_4px_16px_rgba(23,107,156,0.05)] flex flex-col h-full">
+        <Card size="sm" className="lg:col-span-2 glass flex flex-col h-full">
           <CardHeader className="shrink-0">
-            <CardTitle className="text-lg text-[#176B9C]">Engagement vs Duration</CardTitle>
+            <CardTitle className="text-lg text-brand">Engagement vs Duration</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 min-h-0 pt-0">
             <div className="h-full w-full">
@@ -157,36 +157,36 @@ export default function DashboardHome() {
         </Card>
 
         {/* Recent Sessions */}
-        <Card size="sm" className="bg-[#E0FBFC] border border-[#C9E4F0] shadow-[0_4px_16px_rgba(23,107,156,0.05)] flex flex-col h-full">
+        <Card size="sm" className="glass flex flex-col h-full">
           <CardHeader className="shrink-0">
-            <CardTitle className="text-lg text-[#176B9C]">Recent Sessions</CardTitle>
+            <CardTitle className="text-lg text-brand">Recent Sessions</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 flex flex-col gap-4 overflow-auto min-h-0 pt-0">
             {data.recentSessions.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center text-[#668294] text-sm">
+              <div className="flex-1 flex items-center justify-center text-brand-muted text-sm">
                 Nil
               </div>
             ) : (
               data.recentSessions.map((session: any) => (
-                <div key={session.id} className="bg-[#FFFFFF] border border-[#C9E4F0] p-4 rounded-lg flex flex-col gap-3 shrink-0 shadow-[0_4px_16px_rgba(23,107,156,0.02)]">
+                <div key={session.id} className="bg-white border border-brand-border p-4 rounded-lg flex flex-col gap-3 shrink-0 shadow-[0_4px_16px_rgba(23,107,156,0.02)]">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="font-medium text-sm text-[#173B50]">{session.patient}</p>
-                      <p className="text-xs text-[#668294] mt-1">{session.time}</p>
+                      <p className="font-medium text-sm text-brand-dark">{session.patient}</p>
+                      <p className="text-xs text-brand-muted mt-1">{session.time}</p>
                     </div>
-                    <Badge variant="outline" className={`text-[10px] ${session.status === 'Completed' ? 'border-[#78D6B0] text-[#78D6B0]' : 'border-[#FFD76A] text-[#FFD76A]'}`}>
+                    <Badge variant="outline" className={`text-[10px] ${session.status === 'Completed' ? 'border-success-light text-success-light' : 'border-warning-light text-warning-light'}`}>
                       {session.status}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-[#668294]">
-                    <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-[#176B9C]" /> {session.duration}</span>
-                    <span className="flex items-center gap-1"><Target className="w-3 h-3 text-[#176B9C]" /> {session.accuracy} Acc</span>
+                  <div className="flex items-center gap-4 text-xs text-brand-muted">
+                    <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-brand" /> {session.duration}</span>
+                    <span className="flex items-center gap-1"><Target className="w-3 h-3 text-brand" /> {session.accuracy} Acc</span>
                   </div>
                 </div>
               ))
             )}
 
-            <button className="mt-auto w-full py-2 text-sm font-medium text-[#176B9C] hover:bg-white/50 transition-colors border border-[#C9E4F0] bg-white rounded-lg shrink-0">
+            <button className="mt-auto w-full py-2 text-sm font-medium text-brand hover:bg-white/50 transition-colors border border-brand-border bg-white rounded-lg shrink-0">
               View All Sessions
             </button>
           </CardContent>

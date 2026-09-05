@@ -7,8 +7,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="flex h-screen w-full bg-[#63C1BB] overflow-hidden relative">
-      <div className="fixed inset-0 z-0 bg-[#63C1BB]"></div>
+    <div className="flex h-screen w-full bg-background overflow-hidden relative">
       
       <Sidebar />
       
