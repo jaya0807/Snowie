@@ -3,17 +3,17 @@
 $ProjectRoot = $PSScriptRoot
 Write-Host "Starting AI Child Observation Platform from $ProjectRoot..." -ForegroundColor Green
 
-# Start the dashboard Next.js app in the background
+# Start the frontend Next.js app in the background
 $FrontendJob = Start-Job -Name "Frontend" -ScriptBlock {
     param($Root)
-    cd "$Root\dashboard"
+    cd "$Root\frontend"
     npm run dev
 } -ArgumentList $ProjectRoot
 
-# Start the software FastAPI backend in the background
+# Start the backend FastAPI backend in the background
 $BackendJob = Start-Job -Name "Backend" -ScriptBlock {
     param($Root)
-    cd "$Root\software"
+    cd "$Root\backend"
     .\venv\Scripts\Activate.ps1
     # We now run from src module since it was moved
     uvicorn src.api:app --reload --port 8001
