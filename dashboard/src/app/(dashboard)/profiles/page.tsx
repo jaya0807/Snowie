@@ -17,7 +17,7 @@ export default function ProfileView() {
   });
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/profiles")
+    fetch("http://localhost:8001/api/profiles")
       .then(res => res.json())
       .then(json => {
         if (json.patient) setData(json);

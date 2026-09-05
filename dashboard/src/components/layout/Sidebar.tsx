@@ -8,19 +8,19 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-56 flex-shrink-0 hidden md:flex flex-col glass-panel !bg-gradient-to-b !from-white/15 !to-white/5 border-r border-white/10 m-3 rounded-lg z-10">
-      <div className="p-5 flex items-center gap-3 border-b border-white/10">
-        <div className="w-7 h-7 rounded-full bg-white text-black flex items-center justify-center font-bold text-xs">
+    <aside className="w-56 flex-shrink-0 hidden md:flex flex-col bg-[#E9EEF0] border-r border-[#E9EEF0] m-3 rounded-lg z-10 shadow-sm">
+      <div className="p-5 flex items-center gap-3 border-b border-[#176B9C]/10">
+        <div className="w-7 h-7 rounded-full bg-white text-[#176B9C] flex items-center justify-center font-bold text-xs shadow-sm">
           AI
         </div>
-        <span className="font-semibold text-sm tracking-widest">OBSERVE</span>
+        <span className="font-semibold text-sm tracking-widest text-[#173B50]">OBSERVE</span>
       </div>
 
       <nav className="flex-1 p-3 space-y-1.5">
         <Link 
           href="/" 
           className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-            pathname === "/" ? "bg-white/10 text-white" : "hover:bg-white/5 text-zinc-400 hover:text-white"
+            pathname === "/" ? "bg-white text-[#176B9C] shadow-sm" : "text-[#668294] hover:text-[#176B9C] hover:bg-white/50"
           }`}
         >
           <LayoutDashboard className="w-4 h-4" />
@@ -29,7 +29,7 @@ export function Sidebar() {
         <Link 
           href="/sessions" 
           className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-            pathname?.startsWith("/sessions") ? "bg-white/10 text-white" : "hover:bg-white/5 text-zinc-400 hover:text-white"
+            pathname?.startsWith("/sessions") ? "bg-white text-[#176B9C] shadow-sm" : "text-[#668294] hover:text-[#176B9C] hover:bg-white/50"
           }`}
         >
           <Activity className="w-4 h-4" />
@@ -38,7 +38,7 @@ export function Sidebar() {
         <Link 
           href="/profiles" 
           className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-            pathname?.startsWith("/profiles") ? "bg-white/10 text-white" : "hover:bg-white/5 text-zinc-400 hover:text-white"
+            pathname?.startsWith("/profiles") ? "bg-white text-[#176B9C] shadow-sm" : "text-[#668294] hover:text-[#176B9C] hover:bg-white/50"
           }`}
         >
           <Users className="w-4 h-4" />
@@ -47,7 +47,7 @@ export function Sidebar() {
         <Link 
           href="/reports" 
           className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-            pathname?.startsWith("/reports") ? "bg-white/10 text-white" : "hover:bg-white/5 text-zinc-400 hover:text-white"
+            pathname?.startsWith("/reports") ? "bg-white text-[#176B9C] shadow-sm" : "text-[#668294] hover:text-[#176B9C] hover:bg-white/50"
           }`}
         >
           <FileText className="w-4 h-4" />
@@ -55,11 +55,11 @@ export function Sidebar() {
         </Link>
       </nav>
 
-      <div className="p-3 border-t border-white/10">
+      <div className="p-3 border-t border-[#176B9C]/10">
         <Link 
           href="/settings" 
           className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-            pathname?.startsWith("/settings") ? "bg-white/10 text-white" : "hover:bg-white/5 text-zinc-400 hover:text-white"
+            pathname?.startsWith("/settings") ? "bg-white text-[#176B9C] shadow-sm" : "text-[#668294] hover:text-[#176B9C] hover:bg-white/50"
           }`}
         >
           <Settings className="w-4 h-4" />

@@ -12,7 +12,7 @@ export default function ReportsView() {
   ]);
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/reports")
+    fetch("http://localhost:8001/api/reports")
       .then(res => res.json())
       .then(json => {
         if (json.reports && json.reports.length > 0) {
