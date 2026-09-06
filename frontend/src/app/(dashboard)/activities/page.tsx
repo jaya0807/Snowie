@@ -167,8 +167,14 @@ export default function ActivitiesPage() {
                 className="flex items-center gap-2 btn-primary px-6 py-2.5 shadow-md"
               >
                 <Play className="w-4 h-4" />
-                Start Recording this Activity
+                Start in Parent Mode
               </button>
+              <button
+                onClick={() => router.push(`/child?activity=${selectedActivity.id}`)}
+                className="flex items-center gap-2 btn-secondary bg-brand text-white hover:bg-brand-dark px-6 py-2.5 shadow-md"
+              >
+                <Play className="w-4 h-4" />
+                Start in Child Mode              </button>
             </div>
             
           </div>

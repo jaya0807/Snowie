@@ -62,7 +62,9 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-5">
-        <button className="relative text-zinc-900 hover:text-brand transition-colors">
+        <button onClick={() => router.push("/child")} className="mr-2 text-xs font-bold uppercase tracking-wider bg-brand/10 text-brand px-3 py-1.5 rounded-md hover:bg-brand hover:text-white transition-colors">
+          Child Mode
+        </button>        <button className="relative text-zinc-900 hover:text-brand transition-colors">
           <Bell className="w-4 h-4" />
           <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-danger-light rounded-full"></span>
         </button>
