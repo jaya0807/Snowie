@@ -1,29 +1,17 @@
 from .pose_detector import PoseDetector
 from .face_detector import FaceDetector
 
-class PerceptionEngine:
+class LandmarkProcessor:
     def __init__(self):
         self.pose_detector = PoseDetector()
         self.face_detector = FaceDetector()
-
-    def process(self, frame_packet):
-        """
-        Receives a frame_packet from the Capture Engine and returns 
-        the unified perception JSON schema defined in the PDF.
-        """
-        frame = frame_packet.get("frame")
-        timestamp = frame_packet.get("timestamp")
         
-        if frame is None:
-            return None
-            
-        pose_data = self.pose_detector.process_frame(frame)
-        face_data = self.face_detector.process_frame(frame)
+    def process_frame(self, frame, timestamp):
+        pose_result = self.pose_detector.process(frame, timestamp)
+        face_result = self.face_detector.process(frame, timestamp)
         
-        perception_packet = {
+        return {
             "timestamp": timestamp,
-            "pose": pose_data,
-            "face": face_data
+            "pose": pose_result["pose"],
+            "face": face_result["face"]
         }
-        
-        return perception_packet
