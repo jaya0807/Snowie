@@ -61,9 +61,6 @@ export default function DashboardHome() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 shrink-0">
         {statsList.map((stat, i) => (
           <Card key={i} className="glass group hover:bg-white transition-all duration-300 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
-              <stat.icon className="w-16 h-16" />
-            </div>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
               <CardTitle className="text-sm font-semibold text-zinc-600">{stat.label}</CardTitle>
               <div className="p-2 bg-brand/5 rounded-lg border border-brand/10">
