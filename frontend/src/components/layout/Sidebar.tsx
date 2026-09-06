@@ -35,7 +35,6 @@ export function Sidebar() {
         
         <div className="space-y-1.5">
           <NavItem href="/dashboard" icon={LayoutDashboard} label="Overview" />
-          <NavItem href="/profiles" icon={Users} label="Child Profiles" />
         </div>
 
         <div>
