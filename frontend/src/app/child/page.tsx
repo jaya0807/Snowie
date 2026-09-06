@@ -14,22 +14,24 @@ export default function ChildMode() {
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const [streamActive, setStreamActive] = useState(false);
+  const wsRef = useRef<WebSocket | null>(null);
+  const telemetryInterval = useRef<NodeJS.Timeout | null>(null);
 
-  // Helper to stop camera
-  const stopCamera = () => {
+  // Helper to stop camera & WS
+  const stopAll = () => {
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
       stream.getTracks().forEach(track => track.stop());
       videoRef.current.srcObject = null;
     }
     setStreamActive(false);
+    
+    if (telemetryInterval.current) clearInterval(telemetryInterval.current);
+    if (wsRef.current) wsRef.current.close();
   };
 
   useEffect(() => {
-    return () => {
-      // Cleanup camera on unmount
-      stopCamera();
-    };
+    return () => stopAll();
   }, []);
 
   const toggleSession = async () => {
@@ -53,9 +55,37 @@ export default function ChildMode() {
         const data = await res.json();
         setSessionId(data.session_id);
         setIsRunning(true);
+        
+        // Open WS connection to broadcast telemetry
+        const ws = new WebSocket("ws://localhost:8001/api/ws/session");
+        wsRef.current = ws;
+        
+        ws.onopen = () => {
+          // Send mock telemetry every 1.5 seconds
+          let tick = 0;
+          telemetryInterval.current = setInterval(() => {
+            tick++;
+            // Generate some fluctuating fake data
+            const baseEngagement = 75 + Math.random() * 20;
+            const latency = 2.0 + Math.random() * 1.5;
+            
+            const eventType = tick % 5 === 0 
+              ? { time: "Live", msg: "Distraction detected", type: "warn" } 
+              : { time: "Live", msg: "Maintained focus", type: "ok" };
+
+            ws.send(JSON.stringify({
+              type: "telemetry",
+              engagement: Math.round(baseEngagement),
+              latency: latency.toFixed(1),
+              event: eventType,
+              sessionActive: true
+            }));
+          }, 1500);
+        };
+
       } catch (e) {
         console.error(e);
-        stopCamera();
+        stopAll();
       }
     }
   };
@@ -68,21 +98,22 @@ export default function ChildMode() {
         console.error(e);
       }
     }
-    // Turn off camera!
-    stopCamera();
     
-    // Return to parent mode
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+       wsRef.current.send(JSON.stringify({ type: "session_end", sessionActive: false }));
+    }
+    
+    stopAll();
     router.push('/sessions');
   };
 
   return (
     <div className="h-screen w-screen bg-zinc-950 flex flex-col items-center justify-center relative overflow-hidden font-sans">
       
-      {/* Top Bar */}
       <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-10 bg-gradient-to-b from-black/50 to-transparent">
         <button 
           onClick={() => {
-            stopCamera();
+            stopAll();
             router.push('/activities');
           }}
           className="flex items-center gap-2 text-white/70 hover:text-white bg-black/30 px-4 py-2 rounded-full backdrop-blur-md transition-colors"
@@ -97,7 +128,6 @@ export default function ChildMode() {
         </div>
       </div>
 
-      {/* Main Camera Feed */}
       <div className="relative w-full h-full flex items-center justify-center">
         {!streamActive && (
           <div className="absolute flex flex-col items-center text-zinc-500">
@@ -113,13 +143,11 @@ export default function ChildMode() {
           className="w-full h-full object-cover opacity-90 scale-x-[-1]"
         />
         
-        {/* Playful Overlay Border when Running */}
         {isRunning && (
           <div className="absolute inset-0 border-8 border-brand/80 animate-pulse pointer-events-none"></div>
         )}
       </div>
 
-      {/* Bottom Controls */}
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10">
         {!isRunning ? (
           <button 
@@ -139,7 +167,6 @@ export default function ChildMode() {
           </button>
         )}
       </div>
-
     </div>
   );
 }
