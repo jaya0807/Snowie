@@ -9,7 +9,6 @@ import { Progress } from "@/components/ui/progress";
 
 export default function LiveSession() {
   const searchParams = useSearchParams();
-  const hasActivePatient = searchParams.get("patient") !== "none";
   const activityId = searchParams.get("activity") || "A2";
   
   const [sessionActive, setSessionActive] = useState(false);
@@ -21,41 +20,38 @@ export default function LiveSession() {
   
   const wsRef = useRef<WebSocket | null>(null);
 
-  useEffect(() => {
-    if (hasActivePatient) {
-      // Connect to WS to listen for child mode telemetry
-      const ws = new WebSocket("ws://localhost:8001/api/ws/session");
-      wsRef.current = ws;
-      
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          
-          if (data.type === "telemetry") {
-            setSessionActive(true);
-            setTelemetry(prev => {
-              const newEvents = [data.event, ...prev.events].slice(0, 5); // Keep last 5
-              return {
-                engagement: data.engagement,
-                latency: data.latency,
-                events: newEvents
-              };
-            });
-          } else if (data.type === "session_end") {
-            setSessionActive(false);
-          }
-        } catch (e) {
-          console.error("WS Parse error", e);
+  
+
+
+    useEffect(() => {
+    const ws = new WebSocket("ws://localhost:8001/api/ws/session");
+    wsRef.current = ws;
+    
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "telemetry") {
+          setSessionActive(true);
+          setTelemetry(prev => {
+            const newEvents = [data.event, ...prev.events].slice(0, 5);
+            return {
+              engagement: data.engagement,
+              latency: data.latency,
+              events: newEvents
+            };
+          });
+        } else if (data.type === "session_end") {
+          setSessionActive(false);
         }
-      };
+      } catch (e) {
+        console.error("WS Parse error", e);
+      }
+    };
 
-      return () => {
-        if (wsRef.current) wsRef.current.close();
-      };
-    }
-  }, [hasActivePatient]);
-
-  if (!hasActivePatient) return <EmptyState title="Live Session" />;
+    return () => {
+      if (wsRef.current) wsRef.current.close();
+    };
+  }, []);
 
   return (
     <div className="space-y-4">

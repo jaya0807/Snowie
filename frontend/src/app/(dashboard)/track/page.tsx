@@ -7,37 +7,35 @@ import { useState, useEffect } from "react";
 
 export default function TrackPage() {
   const searchParams = useSearchParams();
-  const hasActivePatient = searchParams.get("patient") !== "none";
   
   const [data, setData] = useState<any[]>([]);
   const [trendInfo, setTrendInfo] = useState<any>({});
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (hasActivePatient) {
-      fetch("http://localhost:8001/api/track/trends")
-        .then(res => res.json())
-        .then(resData => {
-          if (resData.history) {
-            setData(resData.history.map((d: any) => ({
-              session: d.session_id,
-              accuracy: Math.round(d.accuracy * 100),
-              latency: d.response_time_sec
-            })));
-          }
-          setTrendInfo(resData);
-          setLoading(false);
-        })
-        .catch(err => {
-          console.error(err);
-          setLoading(false);
-        });
-    }
-  }, [hasActivePatient]);
+  
 
-  if (!hasActivePatient) return <EmptyState title="Progress Trends" />;
 
-  return (
+    useEffect(() => {
+    fetch("http://localhost:8001/api/track/trends")
+      .then(res => res.json())
+      .then(resData => {
+        if (resData.history) {
+          setData(resData.history.map((d: any) => ({
+            session: d.session_id,
+            accuracy: Math.round(d.accuracy * 100),
+            latency: d.response_time_sec
+          })));
+        }
+        setTrendInfo(resData);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
+
+return (
     <div className="flex flex-col h-full space-y-6">
       <div className="flex items-center justify-between">
         <div>

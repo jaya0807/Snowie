@@ -6,39 +6,35 @@ import { useState, useEffect } from "react";
 
 export default function GrowPage() {
   const searchParams = useSearchParams();
-  const hasActivePatient = searchParams.get("patient") !== "none";
   
   const [plan, setPlan] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (hasActivePatient) {
-      fetch("http://localhost:8001/api/grow/recommend")
-        .then(res => res.json())
-        .then(data => {
-          if (data.recommendation) {
-            setPlan([
-              {
-                goal: "Improve completion of two-step instructions",
-                activity: data.recommendation.activity_id + " Recommended",
-                difficulty: data.recommendation.recommended_difficulty,
-                reason: data.reason
-              }
-            ]);
-          }
-          setLoading(false);
-        })
-        .catch(err => {
-          console.error(err);
-          setLoading(false);
-        });
-    }
-  }, [hasActivePatient]);
+  
 
 
-  if (!hasActivePatient) return <EmptyState title="GROW Care Plan" />;
 
-  return (
+    useEffect(() => {
+    fetch("http://localhost:8001/api/grow/recommend")
+      .then(res => res.json())
+      .then(data => {
+        if (data.recommendation) {
+          setPlan([{
+            goal: "Improve completion of two-step instructions",
+            activity: data.recommendation.activity_id + " Recommended",
+            difficulty: data.recommendation.recommended_difficulty,
+            reason: data.reason
+          }]);
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
+
+return (
     <div className="flex flex-col h-full space-y-6">
       <div className="flex items-center justify-between">
         <div>

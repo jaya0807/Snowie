@@ -6,7 +6,6 @@ import { Target, Plus, TrendingUp, AlertCircle } from "lucide-react";
 
 export default function GoalsPage() {
   const searchParams = useSearchParams();
-  const hasActivePatient = searchParams.get("patient") !== "none";
   const goals = [
     { id: "G-001", domain: "Instruction Following", text: "Improve completion of two-step instructions", baseline: "60%", target: "80%", status: "ACTIVE" },
     { id: "G-002", domain: "Imitation", text: "Improve mirrored motor imitation latency", baseline: "4.2s", target: "< 2.0s", status: "ACTIVE" },
@@ -14,7 +13,6 @@ export default function GoalsPage() {
   ];
 
 
-  if (!hasActivePatient) return <EmptyState title="Clinical Goals" />;
 
   return (
     <div className="flex flex-col h-full space-y-6">

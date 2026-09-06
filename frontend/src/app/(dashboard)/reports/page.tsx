@@ -8,24 +8,11 @@ import { useState, useEffect } from "react";
 
 export default function ReportsView() {
   const searchParams = useSearchParams();
-  const hasActivePatient = searchParams.get("patient") !== "none";
   const [reports, setReports] = useState<any[]>([]);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [reportDetails, setReportDetails] = useState<any>(null);
 
-  useEffect(() => {
-    if (hasActivePatient) {
-      fetch("http://localhost:8001/api/reports")
-        .then(res => res.json())
-        .then(json => {
-          if (json.reports && json.reports.length > 0) {
-            setReports(json.reports);
-            setSelectedReportId(json.reports[0].id);
-          }
-        })
-        .catch(err => console.error("Failed to fetch reports:", err));
-    }
-  }, [hasActivePatient]);
+  
 
   useEffect(() => {
     if (selectedReportId) {
@@ -39,9 +26,20 @@ export default function ReportsView() {
     }
   }, [selectedReportId]);
 
-  if (!hasActivePatient) return <EmptyState title="AI Reports" />;
 
-  return (
+    useEffect(() => {
+    fetch("http://localhost:8001/api/reports")
+      .then(res => res.json())
+      .then(json => {
+        if (json.reports && json.reports.length > 0) {
+          setReports(json.reports);
+          setSelectedReportId(json.reports[0].id);
+        }
+      })
+      .catch(err => console.error("Failed to fetch reports:", err));
+  }, []);
+
+return (
     <div className="space-y-4 h-full flex flex-col">
       <div className="flex items-center justify-between">
         <div>
