@@ -26,7 +26,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-4 pt-4">
             <Link 
               href="/sessions" 
-              className="flex items-center justify-center gap-2 bg-brand-blue hover:bg-brand-blue-dark text-white px-8 py-3.5 rounded-full font-medium transition-all shadow-[0_8px_20px_rgba(45,115,255,0.3)] hover:shadow-[0_8px_25px_rgba(45,115,255,0.4)] hover:-translate-y-0.5"
+              className="flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-8 py-3.5 rounded-full font-medium transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
             >
               <Rocket className="w-5 h-5" />
               Start Observation
@@ -34,7 +34,7 @@ export default function LandingPage() {
             
             <Link 
               href="/dashboard" 
-              className="flex items-center justify-center gap-2 bg-white hover:bg-brand-blue-light text-marketing-dark border border-indigo-100 px-8 py-3.5 rounded-full font-medium transition-all shadow-sm"
+              className="flex items-center justify-center gap-2 btn-secondary px-8 py-3.5 font-medium transition-all"
             >
               <Users className="w-5 h-5 text-brand-blue" />
               For Professionals

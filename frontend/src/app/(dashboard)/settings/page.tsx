@@ -8,7 +8,6 @@ export default function SettingsView() {
     <div className="space-y-4 pb-8 h-full">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-zinc-400 text-sm">Manage your clinic preferences and AI configuration.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">

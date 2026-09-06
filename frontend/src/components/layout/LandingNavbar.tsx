@@ -17,7 +17,7 @@ export function LandingNavbar() {
           </svg>
         </div>
         <div>
-          <h1 className="text-xl font-bold leading-tight text-brand-dark">
+          <h1 className="text-xl font-bold leading-tight text-zinc-900">
             AI Child
             <br />
             <span className="text-brand-accent">Observe</span>
@@ -25,8 +25,8 @@ export function LandingNavbar() {
         </div>
       </div>
 
-      <div className="hidden md:flex items-center gap-8 text-sm font-medium text-brand-dark">
-        <Link href="/" className="px-4 py-2 bg-brand-surface-alt rounded-full text-brand">
+      <div className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-900">
+        <Link href="/" className="px-4 py-2 bg-brand-surface-alt rounded-full text-zinc-900">
           Home
         </Link>
         <Link href="#about" className="hover:text-brand-accent transition-colors">
@@ -46,7 +46,7 @@ export function LandingNavbar() {
       <div>
         <Link 
           href="/dashboard" 
-          className="flex items-center gap-2 bg-brand-blue hover:bg-brand-blue-dark text-white px-6 py-2.5 rounded-full font-medium transition-all"
+          className="flex items-center gap-2 btn-primary px-6 py-2.5 font-medium transition-all"
         >
           <User className="w-4 h-4" />
           Login

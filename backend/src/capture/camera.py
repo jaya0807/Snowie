@@ -1,38 +1,56 @@
 import cv2
+import time
 import logging
 
-class Camera:
+logger = logging.getLogger(__name__)
+
+class CameraEngine:
     def __init__(self, camera_id=0, width=640, height=480):
         self.camera_id = camera_id
         self.width = width
         self.height = height
         self.cap = None
+        self.frame_index = 0
+        self.is_running = False
 
     def start(self):
-        self.cap = cv2.VideoCapture(self.camera_id)
-        if not self.cap.isOpened():
-            logging.error(f"Failed to open camera {self.camera_id}")
-            return False
+        try:
+            self.cap = cv2.VideoCapture(self.camera_id)
+            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
+            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
             
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
-        logging.info(f"Camera {self.camera_id} started at {self.width}x{self.height}")
-        return True
+            if not self.cap.isOpened():
+                logger.error(f"Failed to open camera {self.camera_id}")
+                return False
+                
+            self.is_running = True
+            self.frame_index = 0
+            logger.info(f"Camera started at {self.width}x{self.height}")
+            return True
+        except Exception as e:
+            logger.error(f"Camera start exception: {e}")
+            return False
 
-    def get_frame(self):
-        if not self.cap or not self.cap.isOpened():
-            return False, None
+    def read(self):
+        if not self.is_running or self.cap is None:
+            return None
             
         ret, frame = self.cap.read()
         if not ret:
-            logging.warning("Failed to grab frame from camera")
-            return False, None
+            logger.warning("Failed to read frame from camera")
+            return None
             
-        # Optional: Flip horizontally for a mirror effect (more natural for the participant)
-        frame = cv2.flip(frame, 1)
-        return True, frame
+        self.frame_index += 1
+        
+        return {
+            "frame": frame,
+            "timestamp": time.time(),
+            "frame_index": self.frame_index
+        }
 
     def stop(self):
+        self.is_running = False
         if self.cap:
             self.cap.release()
-            logging.info(f"Camera {self.camera_id} released")
+            self.cap = None
+        logger.info("Camera stopped")
