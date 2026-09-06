@@ -1,31 +1,43 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import { EmptyState } from "@/components/ui/EmptyState";
-
 import { FileText, Download, Printer, Filter, ChevronRight, Activity, Eye, Target, BrainCircuit } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
 import { useState, useEffect } from "react";
 
 export default function ReportsView() {
   const searchParams = useSearchParams();
   const hasActivePatient = searchParams.get("patient") !== "none";
-  const [reports, setReports] = useState([
-    { id: "R-1042", patient: "Aarav M.", date: "Loading...", type: "Session Summary", status: "Ready for Review" }
-  ]);
+  const [reports, setReports] = useState<any[]>([]);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [reportDetails, setReportDetails] = useState<any>(null);
 
   useEffect(() => {
-    fetch("http://localhost:8001/api/reports")
-      .then(res => res.json())
-      .then(json => {
-        if (json.reports && json.reports.length > 0) {
-          setReports(json.reports);
-        }
-      })
-      .catch(err => console.error("Failed to fetch reports:", err));
-  }, []);
+    if (hasActivePatient) {
+      fetch("http://localhost:8001/api/reports")
+        .then(res => res.json())
+        .then(json => {
+          if (json.reports && json.reports.length > 0) {
+            setReports(json.reports);
+            setSelectedReportId(json.reports[0].id);
+          }
+        })
+        .catch(err => console.error("Failed to fetch reports:", err));
+    }
+  }, [hasActivePatient]);
 
+  useEffect(() => {
+    if (selectedReportId) {
+      setReportDetails(null);
+      fetch(`http://localhost:8001/api/reports/${selectedReportId}`)
+        .then(res => res.json())
+        .then(json => {
+          setReportDetails(json.sections);
+        })
+        .catch(err => console.error("Failed to fetch report details:", err));
+    }
+  }, [selectedReportId]);
 
   if (!hasActivePatient) return <EmptyState title="AI Reports" />;
 
@@ -42,42 +54,84 @@ export default function ReportsView() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0">
-        {/* Left Column - Report List */}
-        <Card size="sm" className="glass flex flex-col h-[calc(100vh-140px)]">
-          <CardHeader className="border-b border-black/5">
-            <CardTitle className="text-sm font-medium">Recent Reports</CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-auto p-3 space-y-2">
-            {reports.map((report, i) => (
-              <div 
-                key={report.id} 
-                className={`p-3 rounded-lg flex items-center justify-between cursor-pointer transition-colors border ${
-                  i === 0 ? 'bg-brand/5 border-white/20' : 'border-transparent hover:bg-zinc-50 hover:border-black/5'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-sm">{report.patient}</span>
-                    {i === 0 && <span className="w-1.5 h-1.5 bg-blue-400 rounded-full"></span>}
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-zinc-500">
-                    <FileText className="w-3 h-3" />
-                    {report.type} • {report.date}
-                  </div>
-                </div>
-                <ChevronRight className={`w-4 h-4 ${i === 0 ? 'text-zinc-900' : 'text-zinc-500'}`} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+        
+        {/* Left Column - List */}
+        <div className="space-y-3 overflow-y-auto pr-2">
+          {reports.map((report) => (
+            <div 
+              key={report.id} 
+              onClick={() => setSelectedReportId(report.id)}
+              className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                selectedReportId === report.id 
+                  ? "bg-white border-brand shadow-[0_4px_14px_0_rgba(23,107,156,0.12)] ring-1 ring-brand/20" 
+                  : "bg-zinc-50 border-black/5 hover:bg-white hover:shadow-sm hover:border-black/10"
+              }`}
+            >
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-xs font-bold text-brand uppercase tracking-wider">{report.id}</span>
+                <span className="text-[10px] text-zinc-500 font-medium">{report.date}</span>
               </div>
-            ))}
-          </CardContent>
-        </Card>
+              <h3 className="font-semibold text-zinc-900 text-sm mb-1">{report.type}</h3>
+              <div className="flex justify-between items-center mt-3">
+                <Badge variant="outline" className="bg-brand/5 text-brand border-brand/20 text-[10px]">
+                  {report.status}
+                </Badge>
+                <ChevronRight className={`w-4 h-4 ${selectedReportId === report.id ? "text-brand" : "text-zinc-300"}`} />
+              </div>
+            </div>
+          ))}
+        </div>
 
         {/* Right Column - Report Preview */}
         <Card size="sm" className="lg:col-span-2 glass-panel flex flex-col h-[calc(100vh-140px)] relative overflow-hidden">
-          <div className="flex-1 flex flex-col items-center justify-center text-zinc-500">
-            <FileText className="w-12 h-12 mb-4 opacity-20" />
-            <p>Select a report to view details.</p>
-            <p className="text-xs mt-2 text-zinc-600">Report details are currently unavailable.</p>
+          
+          {/* Header */}
+          <div className="p-5 border-b border-black/5 bg-white shrink-0 flex justify-between items-center">
+            <div>
+              <h2 className="font-bold text-zinc-900">Session Report</h2>
+              <p className="text-xs text-zinc-500 mt-1">Generated by Evidence & Report Engine</p>
+            </div>
+            <div className="flex gap-2">
+              <button className="p-2 text-zinc-500 hover:text-brand hover:bg-brand/5 rounded-lg transition-colors">
+                <Printer className="w-4 h-4" />
+              </button>
+              <button className="p-2 text-zinc-500 hover:text-brand hover:bg-brand/5 rounded-lg transition-colors">
+                <Download className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto bg-zinc-50/50 p-6">
+            {!reportDetails ? (
+              <div className="h-full flex flex-col items-center justify-center text-zinc-500">
+                <FileText className="w-12 h-12 mb-4 opacity-20 animate-pulse" />
+                <p>Generating evidence-backed report...</p>
+              </div>
+            ) : (
+              <div className="max-w-2xl mx-auto bg-white p-8 shadow-sm border border-black/5 rounded-lg space-y-8">
+                
+                {Object.values(reportDetails).map((section: any, idx) => (
+                  <div key={idx}>
+                    <h3 className="text-sm font-bold text-brand uppercase tracking-wider mb-3 border-b border-brand/10 pb-2">
+                      {section.title}
+                    </h3>
+                    <p className="text-sm text-zinc-700 leading-relaxed">
+                      {section.content}
+                    </p>
+                    {section.system_limitation && (
+                      <div className="mt-4 p-3 bg-warning-bg rounded border border-warning-border">
+                        <p className="text-xs text-warning-dark font-medium italic">
+                          Disclaimer: {section.system_limitation}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                
+              </div>
+            )}
           </div>
         </Card>
       </div>

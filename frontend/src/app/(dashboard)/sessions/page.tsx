@@ -11,8 +11,11 @@ import { Progress } from "@/components/ui/progress";
 export default function LiveSession() {
   const searchParams = useSearchParams();
   const hasActivePatient = searchParams.get("patient") !== "none";
+  const activityId = searchParams.get("activity") || "A2";
+  
   const [isRunning, setIsRunning] = useState(false);
   const [sessionTime, setSessionTime] = useState(0);
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -31,10 +34,39 @@ export default function LiveSession() {
     return `${m}:${s}`;
   };
 
-  const endSession = () => {
+  const toggleSession = async () => {
+    if (!isRunning) {
+      // Start session
+      try {
+        const res = await fetch(`http://localhost:8001/api/session/start?activity_id=${activityId}`, { method: 'POST' });
+        const data = await res.json();
+        setSessionId(data.session_id);
+        setIsRunning(true);
+      } catch (e) {
+        console.error(e);
+      }
+    } else {
+      // Pause
+      setIsRunning(false);
+    }
+  };
+
+  const endSession = async () => {
     setIsRunning(false);
     setSessionTime(0);
-    alert("Session saved successfully! The AI Report Engine is now generating insights.");
+    
+    if (sessionId) {
+      try {
+        const res = await fetch(`http://localhost:8001/api/session/end?session_id=${sessionId}`, { method: 'POST' });
+        const data = await res.json();
+        alert(`Session saved! Accuracy: ${Math.round(data.result.accuracy * 100)}%, Response Time: ${data.result.response_time_sec}s`);
+      } catch (e) {
+        console.error(e);
+      }
+      setSessionId(null);
+    } else {
+      alert("Session ended.");
+    }
   };
 
   if (!hasActivePatient) return <EmptyState title="Live Session" />;
@@ -43,11 +75,11 @@ export default function LiveSession() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Live Session</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Live Session: {activityId}</h1>
         </div>
         <div className="flex gap-3">
           <button 
-            onClick={() => setIsRunning(!isRunning)}
+            onClick={toggleSession}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               isRunning ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'btn-primary hover:bg-zinc-800'
             }`}
@@ -58,157 +90,90 @@ export default function LiveSession() {
             onClick={endSession}
             className="flex items-center gap-2 btn-secondary px-4 py-2 text-sm font-medium"
           >
-            <Square className="w-4 h-4" /> End Session
+            <Square className="w-4 h-4" />
+            End Session
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Camera Feed */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
-          <Card size="sm" className="glass-panel overflow-hidden">
-            <div className="relative aspect-video bg-zinc-100 flex items-center justify-center border-b border-black/5">
-              {isRunning ? (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  {/* Simulated camera feed with bounding boxes */}
-                  <div className="absolute top-4 left-4 flex gap-2">
-                    <Badge variant="outline" className="bg-black/50 border-white/20 backdrop-blur-md">
-                      <div className="w-2 h-2 rounded-full bg-red-500 mr-2 animate-pulse" /> REC {formatTime(sessionTime)}
-                    </Badge>
-                    <Badge variant="outline" className="bg-black/50 border-white/20 backdrop-blur-md text-green-400">
-                      AI Active
-                    </Badge>
-                  </div>
-                  <Camera className="w-12 h-12 text-zinc-900/20" />
-                  
-                  {/* Fake UI for bounding boxes/landmarks */}
-                  <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-                </div>
-              ) : (
-                <div className="text-center text-zinc-500 flex flex-col items-center">
-                  <Camera className="w-12 h-12 mb-4 opacity-50" />
-                  <p>Camera standby. Press Start to begin observation.</p>
-                </div>
-              )}
+          <Card className="border-0 shadow-sm bg-zinc-950 text-white overflow-hidden">
+            <div className="aspect-video bg-zinc-900 relative flex items-center justify-center border-b border-white/10">
+              <div className="absolute top-4 left-4 flex gap-2">
+                <Badge variant="outline" className="bg-black/50 text-white border-white/20 backdrop-blur-md">
+                  <Camera className="w-3 h-3 mr-1" />
+                  Cam 1
+                </Badge>
+                {isRunning && (
+                  <Badge className="bg-red-500 hover:bg-red-600 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]">
+                    REC
+                  </Badge>
+                )}
+              </div>
+              <div className="absolute top-4 right-4 text-sm font-mono bg-black/50 px-2 py-1 rounded backdrop-blur-md border border-white/20">
+                {formatTime(sessionTime)}
+              </div>
+              <Camera className="w-12 h-12 text-white/10" />
             </div>
-            <div className="p-4 grid grid-cols-3 gap-4">
-              <div className="glass p-3 rounded-lg text-center">
-                <p className="text-xs text-zinc-500">Pose Confidence</p>
-                <p className="text-lg font-semibold text-green-400">{isRunning ? '94%' : 'Nil'}</p>
+            <CardContent className="p-4 grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p className="text-xs text-zinc-400 mb-1">Gaze</p>
+                <p className="font-semibold text-zinc-200">Focused</p>
               </div>
-              <div className="glass p-3 rounded-lg text-center">
-                <p className="text-xs text-zinc-500">Face Landmarks</p>
-                <p className="text-lg font-semibold text-green-400">{isRunning ? 'Tracking' : 'Nil'}</p>
+              <div className="border-x border-white/10">
+                <p className="text-xs text-zinc-400 mb-1">Posture</p>
+                <p className="font-semibold text-zinc-200">Stable</p>
               </div>
-              <div className="glass p-3 rounded-lg text-center">
-                <p className="text-xs text-zinc-500">FPS</p>
-                <p className="text-lg font-semibold text-zinc-900">{isRunning ? '30.2' : '0.0'}</p>
+              <div>
+                <p className="text-xs text-zinc-400 mb-1">Movements</p>
+                <p className="font-semibold text-zinc-200">Expected</p>
               </div>
-            </div>
+            </CardContent>
           </Card>
-
-          {/* Real-time Metrics */}
-          <div className="grid grid-cols-2 gap-4">
-            <Card size="sm" className="glass">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-zinc-500 flex items-center">
-                  <Eye className="w-4 h-4 mr-2" /> Head Orientation
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span>Forward (Engaged)</span>
-                      <span>{isRunning ? '68%' : 'Nil'}</span>
-                    </div>
-                    <Progress value={isRunning ? 68 : 0} className="h-1.5 bg-brand/10 [&_[data-slot=progress-indicator]]:bg-green-400" />
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span>Looking Away</span>
-                      <span>{isRunning ? '22%' : 'Nil'}</span>
-                    </div>
-                    <Progress value={isRunning ? 22 : 0} className="h-1.5 bg-brand/10 [&_[data-slot=progress-indicator]]:bg-yellow-400" />
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span>Looking Down</span>
-                      <span>{isRunning ? '10%' : 'Nil'}</span>
-                    </div>
-                    <Progress value={isRunning ? 10 : 0} className="h-1.5 bg-brand/10 [&_[data-slot=progress-indicator]]:bg-zinc-400" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card size="sm" className="glass">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-zinc-500 flex items-center">
-                  <Activity className="w-4 h-4 mr-2" /> Activity Performance
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                 <div className="flex flex-col items-center justify-center h-full pt-2">
-                    <div className="text-4xl font-bold">{isRunning ? '85%' : 'Nil'}</div>
-                    <p className="text-sm text-zinc-500 mt-1">Accuracy</p>
-                    <div className="mt-4 flex gap-2">
-                      {isRunning ? (
-                        <>
-                          <Badge className="bg-green-500/20 text-green-400 hover:bg-green-500/20">Task 1: Pass</Badge>
-                          <Badge className="bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/20">Task 2: In Prog</Badge>
-                        </>
-                      ) : (
-                        <Badge className="bg-zinc-500/20 text-zinc-500 hover:bg-zinc-500/20">Waiting to start</Badge>
-                      )}
-                    </div>
-                 </div>
-              </CardContent>
-            </Card>
-          </div>
         </div>
 
-        {/* Live Event Log */}
-        <Card size="sm" className="glass-panel flex flex-col h-[calc(100vh-140px)] sticky top-6">
-          <CardHeader className="border-b border-black/5 pb-4">
-            <CardTitle className="text-lg flex items-center justify-between">
-              Live Event Log
-              <Settings className="w-4 h-4 text-zinc-500 cursor-pointer hover:text-zinc-900" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-auto p-0">
-            <div className="flex flex-col">
-              {!isRunning ? (
-                 <div className="p-8 text-center text-zinc-500 text-sm">
-                   Event engine is paused.
-                 </div>
-              ) : (
-                 <div className="p-4 space-y-4">
-                   <div className="border-l-2 border-brand pl-3">
-                     <p className="text-[10px] text-zinc-400 font-bold tracking-widest">00:14</p>
-                     <p className="text-sm font-semibold text-zinc-900">REPEATED_MOVEMENT</p>
-                     <p className="text-xs text-zinc-500">Right Wrist • 4 cycles • 85% confidence</p>
-                   </div>
-                   <div className="border-l-2 border-warning pl-3">
-                     <p className="text-[10px] text-zinc-400 font-bold tracking-widest">00:09</p>
-                     <p className="text-sm font-semibold text-zinc-900">HEAD_ORIENTATION_CHANGE</p>
-                     <p className="text-xs text-zinc-500">State: DOWN • Indicates potential inattention</p>
-                   </div>
-                   <div className="border-l-2 border-success pl-3">
-                     <p className="text-[10px] text-zinc-400 font-bold tracking-widest">00:02</p>
-                     <p className="text-sm font-semibold text-zinc-900">ACTIVITY_STARTED</p>
-                     <p className="text-xs text-zinc-500">A1: Natural Interaction / Warm-up</p>
-                   </div>
-                   <div className="border-l-2 border-brand-border pl-3">
-                     <p className="text-[10px] text-zinc-400 font-bold tracking-widest">00:00</p>
-                     <p className="text-sm font-semibold text-zinc-900">SESSION_STARTED</p>
-                     <p className="text-xs text-zinc-500">Engine initialized successfully.</p>
-                   </div>
-                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <Card className="border-0 shadow-sm bg-zinc-50 border border-black/5">
+            <CardHeader className="pb-3 border-b border-black/5">
+              <CardTitle className="text-sm font-bold flex items-center justify-between">
+                <span>Real-time Metrics</span>
+                <Activity className="w-4 h-4 text-brand" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 space-y-5">
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="font-medium text-zinc-900">Task Engagement</span>
+                  <span className="text-zinc-500">85%</span>
+                </div>
+                <Progress value={85} className="h-1.5 [&>div]:bg-brand" />
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="font-medium text-zinc-900">Response Latency</span>
+                  <span className="text-zinc-500">2.4s avg</span>
+                </div>
+                <Progress value={60} className="h-1.5 [&>div]:bg-brand" />
+              </div>
+
+              <div className="pt-3 mt-3 border-t border-black/5">
+                <p className="text-xs font-bold text-zinc-900 mb-2">Recent Events</p>
+                <div className="space-y-2">
+                  <div className="text-[10px] bg-white p-2 rounded border border-black/5 flex items-start gap-2">
+                    <span className="text-brand font-mono">01:24</span>
+                    <span className="text-zinc-600">Successfully matched target object (Low latency)</span>
+                  </div>
+                  <div className="text-[10px] bg-white p-2 rounded border border-black/5 flex items-start gap-2">
+                    <span className="text-warning-dark font-mono">01:12</span>
+                    <span className="text-zinc-600">Brief distraction detected (Head turned left)</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

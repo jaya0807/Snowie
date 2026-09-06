@@ -1,16 +1,39 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import { EmptyState } from "@/components/ui/EmptyState";
-
 import { Sprout, ArrowRight, BrainCircuit, Play } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export default function GrowPage() {
   const searchParams = useSearchParams();
   const hasActivePatient = searchParams.get("patient") !== "none";
-  const plan = [
-    { goal: "Improve completion of two-step instructions", activity: "A2: Follow the Instruction", difficulty: "Medium", reason: "Consistently strong two-step performance in last session. Complexity increased." },
-    { goal: "Improve mirrored motor imitation latency", activity: "A4: Imitation", difficulty: "Low", reason: "Response latency remained > 4s. Maintaining low complexity to build confidence." }
-  ];
+  
+  const [plan, setPlan] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (hasActivePatient) {
+      fetch("http://localhost:8001/api/grow/recommend")
+        .then(res => res.json())
+        .then(data => {
+          if (data.recommendation) {
+            setPlan([
+              {
+                goal: "Improve completion of two-step instructions",
+                activity: data.recommendation.activity_id + " Recommended",
+                difficulty: data.recommendation.recommended_difficulty,
+                reason: data.reason
+              }
+            ]);
+          }
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error(err);
+          setLoading(false);
+        });
+    }
+  }, [hasActivePatient]);
 
 
   if (!hasActivePatient) return <EmptyState title="GROW Care Plan" />;
@@ -27,33 +50,35 @@ export default function GrowPage() {
         <div className="lg:col-span-2 space-y-4">
           <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-wider mb-4">Recommended Session Plan</h2>
           
-          {plan.map((item, idx) => (
-            <div key={idx} className="glass p-5 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-1 h-full bg-brand"></div>
-              
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                <div>
-                  <p className="text-xs font-medium text-brand mb-1">Targeting Goal</p>
-                  <h3 className="font-semibold text-zinc-900 text-sm">{item.goal}</h3>
-                </div>
-                <ArrowRight className="w-4 h-4 text-zinc-300 hidden md:block shrink-0" />
-                <div className="bg-brand-surface-alt border border-brand-border px-4 py-3 rounded-lg flex items-center gap-3 md:w-1/2">
-                  <div className="w-8 h-8 rounded bg-white flex items-center justify-center shadow-sm shrink-0">
-                    <Play className="w-3.5 h-3.5 text-brand" />
-                  </div>
+          {loading ? (
+            <p className="text-sm text-zinc-500">Generating AI recommendations...</p>
+          ) : (
+            plan.map((item, idx) => (
+              <div key={idx} className="glass p-5 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1 h-full bg-brand"></div>
+                
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                   <div>
-                    <p className="text-xs font-bold text-zinc-900">{item.activity}</p>
-                    <p className="text-[10px] text-zinc-500 mt-0.5">Difficulty: <span className="text-brand font-semibold">{item.difficulty}</span></p>
+                    <p className="text-xs font-medium text-brand mb-1">Targeting Goal</p>
+                    <h3 className="font-semibold text-zinc-900 text-sm">{item.goal}</h3>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-zinc-300 hidden md:block shrink-0" />
+                  <div className="bg-brand-surface-alt border border-brand-border px-4 py-3 rounded-lg flex items-center gap-3 md:w-1/2">
+                    <Play className="w-4 h-4 text-brand shrink-0" />
+                    <div>
+                      <p className="text-xs font-bold text-zinc-900">{item.activity}</p>
+                      <p className="text-[10px] text-zinc-500 uppercase">Difficulty: {item.difficulty}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="bg-zinc-50 p-3 rounded border border-black/5 flex items-start gap-2">
-                <BrainCircuit className="w-4 h-4 text-brand mt-0.5 shrink-0" />
-                <p className="text-xs text-zinc-600 leading-relaxed"><span className="font-semibold text-zinc-900">AI Logic:</span> {item.reason}</p>
+                <div className="bg-zinc-50 p-3 rounded border border-black/5 flex items-start gap-2">
+                  <BrainCircuit className="w-4 h-4 text-brand mt-0.5 shrink-0" />
+                  <p className="text-xs text-zinc-600 leading-relaxed"><span className="font-semibold text-zinc-900">AI Logic:</span> {item.reason}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
         <div className="space-y-4">
