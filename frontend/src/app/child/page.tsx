@@ -15,30 +15,39 @@ export default function ChildMode() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [streamActive, setStreamActive] = useState(false);
 
-  useEffect(() => {
-    // Start webcam
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then((stream) => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          setStreamActive(true);
-        }
-      })
-      .catch((err) => {
-        console.error("Error accessing camera:", err);
-      });
+  // Helper to stop camera
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    setStreamActive(false);
+  };
 
+  useEffect(() => {
     return () => {
       // Cleanup camera on unmount
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-      }
+      stopCamera();
     };
   }, []);
 
   const toggleSession = async () => {
     if (!isRunning) {
+      // Turn on camera FIRST
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          setStreamActive(true);
+        }
+      } catch (err) {
+        console.error("Error accessing camera:", err);
+        alert("Camera access is required to play this activity!");
+        return;
+      }
+
+      // Start backend session
       try {
         const res = await fetch(`http://localhost:8001/api/session/start?activity_id=${activityId}`, { method: 'POST' });
         const data = await res.json();
@@ -46,6 +55,7 @@ export default function ChildMode() {
         setIsRunning(true);
       } catch (e) {
         console.error(e);
+        stopCamera();
       }
     }
   };
@@ -58,6 +68,9 @@ export default function ChildMode() {
         console.error(e);
       }
     }
+    // Turn off camera!
+    stopCamera();
+    
     // Return to parent mode
     router.push('/sessions');
   };
@@ -68,7 +81,10 @@ export default function ChildMode() {
       {/* Top Bar */}
       <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-10 bg-gradient-to-b from-black/50 to-transparent">
         <button 
-          onClick={() => router.push('/activities')}
+          onClick={() => {
+            stopCamera();
+            router.push('/activities');
+          }}
           className="flex items-center gap-2 text-white/70 hover:text-white bg-black/30 px-4 py-2 rounded-full backdrop-blur-md transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -86,7 +102,7 @@ export default function ChildMode() {
         {!streamActive && (
           <div className="absolute flex flex-col items-center text-zinc-500">
             <CameraIcon className="w-16 h-16 mb-4 opacity-50" />
-            <p className="text-lg">Waiting for camera...</p>
+            <p className="text-lg">Click "Start Playing" to turn on camera!</p>
           </div>
         )}
         <video 
