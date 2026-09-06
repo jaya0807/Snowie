@@ -1,3 +1,5 @@
+from database.database import Database
+import time
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import sqlite3
@@ -18,19 +20,45 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "observe.db")
 
 @app.get("/api/dashboard")
 def get_dashboard_data(patient_id: str = "P1"):
+    from database.database import Database
+    import datetime
+    db = Database(DB_PATH)
+    recent = db.get_recent_sessions(patient_id, limit=5)
+    
+    formatted_recent = []
+    for s in recent:
+        # Calculate duration
+        try:
+            start = float(s["start_time"])
+            end = float(s["end_time"])
+            dur_min = int((end - start) / 60)
+            if dur_min < 1: dur_min = 1
+            dt = datetime.datetime.fromtimestamp(start).strftime("%b %d, %H:%M")
+        except:
+            dur_min = 5
+            dt = "Recently"
+            
+        acc = s.get("accuracy")
+        acc_str = f"{int(acc*100)}%" if acc is not None else "N/A"
+            
+        formatted_recent.append({
+            "id": s["session_id"][:8],
+            "activity": f"Activity ({s['activity_id']})",
+            "time": dt,
+            "duration": f"{dur_min}m",
+            "accuracy": acc_str,
+            "status": "Completed"
+        })
+
     # Return simplified single-child overview data
     return {
         "stats": {
-            "totalSessions": {"value": 12, "trend": "+2 this week", "isPositive": True, "label": "Total Sessions"},
+            "totalSessions": {"value": len(recent) + 12, "trend": f"+{len(recent)} this week", "isPositive": True, "label": "Total Sessions"},
             "avgEngagement": {"value": "78%", "trend": "+5% from last week", "isPositive": True, "label": "Avg Focus Time"},
             "avgDuration": {"value": "18m", "trend": "Optimal", "isPositive": True, "label": "Session Duration"},
             "goalAchievement": {"value": "60%", "trend": "On track", "isPositive": True, "label": "Goal Progress"}
         },
-        "recentSessions": [
-            {"id": "S-012", "activity": "Follow Instruction (A2)", "time": "Today, 10:30 AM", "duration": "12m", "accuracy": "80%", "status": "Completed"},
-            {"id": "S-011", "activity": "Imitation (A4)", "time": "Yesterday, 2:15 PM", "duration": "15m", "accuracy": "65%", "status": "Completed"},
-            {"id": "S-010", "activity": "Natural Interaction (A1)", "time": "Mon, 9:00 AM", "duration": "8m", "accuracy": "N/A", "status": "Completed"}
-        ],
+        "recentSessions": formatted_recent,
         "chartData": [
             {"name": "Mon", "engagement": 65},
             {"name": "Tue", "engagement": 72},
@@ -114,27 +142,36 @@ def get_recommendation(patient_id: str = "P1"):
 # --- TRACK API ---
 @app.get("/api/track/trends")
 def get_trends(patient_id: str = "P1", activity_id: str = "A2"):
-    tracker = ProgressTracker(db_connection=DB_PATH)
+    from database.database import Database
+    db = Database(DB_PATH)
+    history = db.get_session_history(patient_id, activity_id)
     
-    # We will mock the history inside compute_trends for the demo if it's empty, 
-    # but since our tracker returns "No data" if empty, let's inject some mock history
-    # for the frontend to render the Recharts graph.
-    mock_history = [
-        {"session_id": "S1", "accuracy": 0.45, "response_time_sec": 4.8},
-        {"session_id": "S2", "accuracy": 0.50, "response_time_sec": 4.2},
-        {"session_id": "S3", "accuracy": 0.48, "response_time_sec": 4.5},
-        {"session_id": "S4", "accuracy": 0.65, "response_time_sec": 3.8},
-        {"session_id": "S5", "accuracy": 0.72, "response_time_sec": 3.1},
-        {"session_id": "S6", "accuracy": 0.80, "response_time_sec": 2.8}
-    ]
-    
-    trend_data = tracker.compute_trends(patient_id, activity_id)
-    # Override history for UI rendering since DB is empty
-    trend_data["history"] = mock_history
-    trend_data["accuracy_trend"] = "Improving"
-    trend_data["sessions_supported"] = len(mock_history)
-    
-    return trend_data
+    # If not enough history, inject some starter history so the chart isn't empty on day 1
+    if len(history) < 2:
+        mock_history = [
+            {"session_id": "S1", "accuracy": 0.45, "response_time_sec": 4.8},
+            {"session_id": "S2", "accuracy": 0.50, "response_time_sec": 4.2},
+            {"session_id": "S3", "accuracy": 0.48, "response_time_sec": 4.5}
+        ]
+        history = mock_history + history
+        
+    trend = "Stable"
+    if len(history) >= 2:
+        if history[-1].get("accuracy", 0) > history[0].get("accuracy", 0):
+            trend = "Improving"
+        elif history[-1].get("accuracy", 0) < history[0].get("accuracy", 0):
+            trend = "Declining"
+            
+    response_times = [h.get("response_time_sec", 0) for h in history]
+    avg_resp = sum(response_times) / len(response_times) if response_times else 0
+
+    return {
+        "activity_id": activity_id,
+        "sessions_supported": len(history),
+        "accuracy_trend": trend,
+        "average_response_time": avg_resp,
+        "history": history
+    }
 
 # --- SESSION & ACTIVITY API ---
 from activity.activity_engine import ActivityRuntime
@@ -145,13 +182,19 @@ active_sessions = {}
 
 @app.post("/api/session/start")
 def start_session(activity_id: str, patient_id: str = "P1"):
-    # In a real app we'd fetch the type and difficulty from activity_definitions
-    session_id = f"sess_{len(active_sessions) + 1}"
+    import uuid
+    session_id = f"sess_{uuid.uuid4().hex[:8]}"
     
     runtime = ActivityRuntime(session_id, activity_id, "instruction_following", "Low")
     runtime.start()
     
     active_sessions[session_id] = runtime
+    
+    # Save to SQLite
+    db = Database(DB_PATH)
+    # Ensure participant exists
+    db.add_participant(patient_id, "Child", 5, time.time())
+    db.start_session(session_id, patient_id, time.time(), activity_id, "Low")
     
     return {"status": "started", "session_id": session_id}
 
@@ -162,13 +205,18 @@ def end_session(session_id: str):
         
     runtime = active_sessions[session_id]
     
-    # Mocking a response for the demo (child got 2 out of 3 steps right)
-    accuracy = ScoringEngine.calculate_multi_step_accuracy(correct_steps=2, total_steps=3)
-    response_time = 4.2
+    import random
+    # Generate somewhat realistic but random scores for the demo
+    accuracy = random.choice([0.33, 0.66, 1.0])
+    response_time = round(random.uniform(2.0, 6.0), 1)
     
     result = runtime.finish(completion_status="COMPLETED", accuracy=accuracy, response_time=response_time)
     
     del active_sessions[session_id]
+    
+    # Save to SQLite
+    db = Database(DB_PATH)
+    db.end_session(session_id, time.time(), accuracy, response_time)
     
     return {"status": "ended", "result": result}
 
@@ -261,3 +309,45 @@ async def websocket_endpoint(websocket: WebSocket):
         manager.disconnect(websocket)
     except Exception as e:
         print(f"WS Error: {e}")
+
+@app.get("/api/activities")
+def get_activities():
+    from activity.activity_definitions import ActivityDefinitions
+    defs = ActivityDefinitions()
+    acts = []
+    for aid, meta in defs.get_all_activities().items():
+        acts.append({
+            "id": aid,
+            "name": meta["name"],
+            "domain": meta["domain"],
+            "description": meta["description"],
+            "difficulty_levels": meta["difficulty_levels"]
+        })
+    return acts
+
+@app.get("/api/grow/goals")
+def get_goals(patient_id: str = "P1"):
+    from database.database import Database
+    db = Database(DB_PATH)
+    with sqlite3.connect(db.db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM goals WHERE participant_id = ?", (patient_id,))
+        rows = [dict(row) for row in cursor.fetchall()]
+        
+    if not rows:
+        # Seed initial goals
+        goals = [
+            {"goal_id": "G-001", "participant_id": patient_id, "domain": "Instruction Following", "goal_text": "Improve completion of two-step instructions", "baseline": "60%", "target": "80%", "status": "ACTIVE"},
+            {"goal_id": "G-002", "participant_id": patient_id, "domain": "Imitation", "goal_text": "Improve mirrored motor imitation latency", "baseline": "4.2s", "target": "< 2.0s", "status": "ACTIVE"},
+            {"goal_id": "G-003", "participant_id": patient_id, "domain": "Social / Emotion", "goal_text": "Identify basic emotions correctly", "baseline": "40%", "target": "75%", "status": "REVIEW"}
+        ]
+        with sqlite3.connect(db.db_path) as conn:
+            cursor = conn.cursor()
+            for g in goals:
+                cursor.execute('''INSERT INTO goals (goal_id, participant_id, domain, goal_text, baseline, target, status) 
+                                  VALUES (?, ?, ?, ?, ?, ?, ?)''', 
+                               (g["goal_id"], g["participant_id"], g["domain"], g["goal_text"], g["baseline"], g["target"], g["status"]))
+            conn.commit()
+        return goals
+    return rows

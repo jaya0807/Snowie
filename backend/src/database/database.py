@@ -1,7 +1,7 @@
 import sqlite3
 from typing import List
 import uuid
-from .models import Participant, Session, Event
+import json
 
 class Database:
     def __init__(self, db_path: str = "observe.db"):
@@ -11,8 +11,6 @@ class Database:
     def _init_db(self):
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            
-            # Create Participants Table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS participants (
                     participant_id TEXT PRIMARY KEY,
@@ -21,19 +19,18 @@ class Database:
                     created_at TEXT
                 )
             ''')
-            
-            # Create Sessions Table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS sessions (
                     session_id TEXT PRIMARY KEY,
                     participant_id TEXT,
                     start_time TEXT,
                     end_time TEXT,
-                    FOREIGN KEY (participant_id) REFERENCES participants (participant_id)
+                    activity_id TEXT,
+                    difficulty TEXT,
+                    accuracy REAL,
+                    response_time_sec REAL
                 )
             ''')
-            
-            # Create Events Table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS events (
                     event_id TEXT PRIMARY KEY,
@@ -47,55 +44,65 @@ class Database:
                     FOREIGN KEY (session_id) REFERENCES sessions (session_id)
                 )
             ''')
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS goals (
+                    goal_id TEXT PRIMARY KEY,
+                    participant_id TEXT,
+                    domain TEXT,
+                    goal_text TEXT,
+                    baseline TEXT,
+                    target TEXT,
+                    status TEXT
+                )
+            ''')
             conn.commit()
 
-    def add_participant(self, participant: Participant):
+    def add_participant(self, participant_id, name, age, created_at):
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('''
                 INSERT OR REPLACE INTO participants (participant_id, name, age, created_at)
                 VALUES (?, ?, ?, ?)
-            ''', (participant.participant_id, participant.name, participant.age, participant.created_at))
+            ''', (participant_id, name, age, created_at))
             conn.commit()
 
-    def start_session(self, session: Session):
+    def start_session(self, session_id, participant_id, start_time, activity_id, difficulty):
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO sessions (session_id, participant_id, start_time, end_time)
-                VALUES (?, ?, ?, ?)
-            ''', (session.session_id, session.participant_id, session.start_time, session.end_time))
+                INSERT INTO sessions (session_id, participant_id, start_time, activity_id, difficulty)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (session_id, participant_id, start_time, activity_id, difficulty))
             conn.commit()
 
-    def end_session(self, session_id: str, end_time: str):
+    def end_session(self, session_id, end_time, accuracy, response_time_sec):
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                UPDATE sessions SET end_time = ? WHERE session_id = ?
-            ''', (end_time, session_id))
+                UPDATE sessions 
+                SET end_time = ?, accuracy = ?, response_time_sec = ?
+                WHERE session_id = ?
+            ''', (end_time, accuracy, response_time_sec, session_id))
             conn.commit()
-
-    def log_event(self, event: Event):
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT INTO events (event_id, session_id, timestamp, event_type, duration, body_region, confidence, context)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                event.event_id, 
-                event.session_id, 
-                event.timestamp, 
-                event.event_type, 
-                event.duration, 
-                event.body_region, 
-                event.confidence, 
-                event.context_to_json()
-            ))
-            conn.commit()
-
-    def get_events_for_session(self, session_id: str) -> List[dict]:
+            
+    def get_recent_sessions(self, participant_id, limit=5):
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute('SELECT * FROM events WHERE session_id = ? ORDER BY timestamp ASC', (session_id,))
+            cursor.execute('''
+                SELECT * FROM sessions 
+                WHERE participant_id = ? AND end_time IS NOT NULL
+                ORDER BY start_time DESC LIMIT ?
+            ''', (participant_id, limit))
+            return [dict(row) for row in cursor.fetchall()]
+            
+    def get_session_history(self, participant_id, activity_id):
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT * FROM sessions 
+                WHERE participant_id = ? AND activity_id = ? AND end_time IS NOT NULL
+                ORDER BY start_time ASC
+            ''', (participant_id, activity_id))
             return [dict(row) for row in cursor.fetchall()]
