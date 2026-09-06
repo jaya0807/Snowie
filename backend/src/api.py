@@ -237,6 +237,8 @@ from fastapi import WebSocket, WebSocketDisconnect
 from typing import List
 import json
 
+from perception_pipeline import PerceptionPipeline
+
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
@@ -258,16 +260,25 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+
+pipeline = PerceptionPipeline()
+
 @app.websocket("/api/ws/session")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
         while True:
-            # Receive telemetry from child mode
-            data = await websocket.receive_text()
+            data_str = await websocket.receive_text()
+            data = json.loads(data_str)
             
-            # Broadcast it immediately to all listeners (parent mode)
-            await manager.broadcast(data)
+            if data.get("type") == "frame":
+                # Process actual video frame!
+                telemetry = pipeline.process_base64_frame(data["image"])
+                await manager.broadcast(json.dumps(telemetry))
+            elif data.get("type") == "session_end":
+                await manager.broadcast(json.dumps({"type": "session_end", "sessionActive": False}))
             
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+    except Exception as e:
+        print(f"WS Error: {e}")

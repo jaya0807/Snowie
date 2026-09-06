@@ -13,11 +13,11 @@ export default function ChildMode() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [streamActive, setStreamActive] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const telemetryInterval = useRef<NodeJS.Timeout | null>(null);
 
-  // Helper to stop camera & WS
   const stopAll = () => {
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
@@ -36,9 +36,8 @@ export default function ChildMode() {
 
   const toggleSession = async () => {
     if (!isRunning) {
-      // Turn on camera FIRST
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           setStreamActive(true);
@@ -49,38 +48,36 @@ export default function ChildMode() {
         return;
       }
 
-      // Start backend session
       try {
         const res = await fetch(`http://localhost:8001/api/session/start?activity_id=${activityId}`, { method: 'POST' });
         const data = await res.json();
         setSessionId(data.session_id);
         setIsRunning(true);
         
-        // Open WS connection to broadcast telemetry
         const ws = new WebSocket("ws://localhost:8001/api/ws/session");
         wsRef.current = ws;
         
         ws.onopen = () => {
-          // Send mock telemetry every 1.5 seconds
-          let tick = 0;
+          // Send frames at ~5 FPS to avoid lagging the browser/websocket
           telemetryInterval.current = setInterval(() => {
-            tick++;
-            // Generate some fluctuating fake data
-            const baseEngagement = 75 + Math.random() * 20;
-            const latency = 2.0 + Math.random() * 1.5;
-            
-            const eventType = tick % 5 === 0 
-              ? { time: "Live", msg: "Distraction detected", type: "warn" } 
-              : { time: "Live", msg: "Maintained focus", type: "ok" };
-
-            ws.send(JSON.stringify({
-              type: "telemetry",
-              engagement: Math.round(baseEngagement),
-              latency: latency.toFixed(1),
-              event: eventType,
-              sessionActive: true
-            }));
-          }, 1500);
+            if (videoRef.current && canvasRef.current && ws.readyState === WebSocket.OPEN) {
+              const video = videoRef.current;
+              const canvas = canvasRef.current;
+              canvas.width = video.videoWidth;
+              canvas.height = video.videoHeight;
+              
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                // Compress to lightweight JPEG
+                const base64Image = canvas.toDataURL('image/jpeg', 0.5);
+                ws.send(JSON.stringify({
+                  type: "frame",
+                  image: base64Image
+                }));
+              }
+            }
+          }, 200); // 5 FPS
         };
 
       } catch (e) {
@@ -142,6 +139,8 @@ export default function ChildMode() {
           muted 
           className="w-full h-full object-cover opacity-90 scale-x-[-1]"
         />
+        {/* Hidden canvas for extracting frames */}
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
         
         {isRunning && (
           <div className="absolute inset-0 border-8 border-brand/80 animate-pulse pointer-events-none"></div>
