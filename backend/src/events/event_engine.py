@@ -33,9 +33,9 @@ class EventEngine:
             ''')
             
             cursor.execute('''
-                INSERT INTO events (event_id, session_id, timestamp, event_type, duration, body_region, confidence, activity_id, difficulty, context)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (event_id, self.session_id, str(timestamp), event_type, duration, body_region, confidence, activity_id, difficulty, context_str))
+                INSERT INTO events (event_id, session_id, timestamp, event_type, duration, body_region, confidence, context)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (event_id, self.session_id, str(timestamp), event_type, duration, body_region, confidence, context_str))
             
             conn.commit()
             
