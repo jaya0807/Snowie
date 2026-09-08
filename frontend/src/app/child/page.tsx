@@ -2,6 +2,7 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
+import Activity1UI from "@/activities/a1_natural_interaction/Activity1UI";
 import { Play, Square, ArrowLeft, Camera as CameraIcon, Star } from "lucide-react";
 
 export default function ChildMode() {
@@ -103,6 +104,10 @@ export default function ChildMode() {
     stopAll();
     router.push('/sessions');
   };
+
+  if (activityId === "A1") {
+    return <Activity1UI />;
+  }
 
   return (
     <div className="h-screen w-screen bg-zinc-950 flex flex-col items-center justify-center relative overflow-hidden font-sans">
