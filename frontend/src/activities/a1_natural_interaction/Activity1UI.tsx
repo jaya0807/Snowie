@@ -2,6 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Mic, CheckCircle2, ChevronRight, X, Camera } from "lucide-react";
+import BackgroundScene from "./components/BackgroundScene";
+import CameraMirror from "./components/CameraMirror";
+import FeelingSelector from "./components/FeelingSelector";
+import AnimalSelector from "./components/AnimalSelector";
+import { useVoiceRecognition } from "./components/useVoiceRecognition";
 import { useRouter } from "next/navigation";
 
 // The 6 steps of our Animal Journey
@@ -24,8 +29,7 @@ export default function Activity1UI() {
   const [favAnimal, setFavAnimal] = useState("");
   const [dayText, setDayText] = useState("");
   
-  const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<any>(null);
+  const { isListening, toggleListen } = useVoiceRecognition(stepIndex, setName, setDayText);
   
   // Camera and Telemetry state
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -92,45 +96,7 @@ export default function Activity1UI() {
     };
   }, []);
 
-  // Initialize Web Speech API for Native Voice Recognition
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = false;
-        recognitionRef.current.interimResults = true;
-        
-        recognitionRef.current.onresult = (event: any) => {
-          const transcript = Array.from(event.results)
-            .map((result: any) => result[0])
-            .map((result: any) => result.transcript)
-            .join('');
-            
-          if (stepIndex === 1) setName(transcript);
-          if (stepIndex === 4) setDayText(transcript);
-        };
 
-        recognitionRef.current.onend = () => {
-          setIsListening(false);
-        };
-      }
-    }
-  }, [stepIndex]);
-
-  const toggleListen = () => {
-    if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
-    } else {
-      try {
-        recognitionRef.current?.start();
-        setIsListening(true);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  };
 
   const nextStep = async () => {
     if (stepIndex < STEPS.length - 1) {
@@ -168,22 +134,7 @@ export default function Activity1UI() {
   return (
     <div className="relative w-screen h-screen overflow-hidden font-sans">
       {/* 1. The Art Assets (Background Layer) */}
-      <div className="absolute inset-0 bg-gradient-to-b from-sky-300 via-sky-100 to-[#78c05c] z-0 overflow-hidden">
-        {/* Lush Hills */}
-        <div className="w-[200%] h-[50%] bg-[#8cdb6c] rounded-[100%] absolute -bottom-[20%] -left-[50%] shadow-inner"></div>
-        <div className="w-[150%] h-[60%] bg-[#72ba56] rounded-[100%] absolute -bottom-[30%] -right-[25%] shadow-[inset_0_20px_40px_rgba(255,255,255,0.2)]"></div>
-        
-        {/* The Sun */}
-        <div className="absolute top-12 right-12 w-32 h-32 bg-yellow-300 rounded-full shadow-[0_0_80px_rgba(253,224,71,1),inset_0_0_20px_rgba(255,255,255,0.8)] flex items-center justify-center text-6xl animate-pulse" style={{ animationDuration: '4s' }}>
-          ☀️
-        </div>
-        
-        {/* Floating Clouds/Stars */}
-        <div className="absolute top-[20%] left-[10%] text-white/60 text-6xl animate-pulse" style={{ animationDuration: '3s' }}>☁️</div>
-        <div className="absolute top-[30%] right-[20%] text-white/50 text-5xl animate-bounce" style={{ animationDuration: '6s' }}>☁️</div>
-        <div className="absolute top-[40%] left-[25%] text-yellow-300 text-3xl animate-pulse" style={{ animationDuration: '2s' }}>✨</div>
-        <div className="absolute top-[20%] right-[40%] text-yellow-300 text-4xl animate-pulse" style={{ animationDuration: '2.5s' }}>⭐</div>
-      </div>
+      <BackgroundScene />
 
       {/* Close Button */}
       <button 
@@ -207,21 +158,7 @@ export default function Activity1UI() {
       <canvas ref={canvasRef} className="hidden" />
 
       {/* PIP Camera Mirror */}
-      <div className="absolute top-6 right-6 z-50 overflow-hidden w-32 h-32 md:w-48 md:h-48 rounded-full border-4 border-white shadow-[0_10px_30px_rgba(0,0,0,0.3)] bg-zinc-200 flex items-center justify-center transition-all duration-500">
-        {!cameraActive && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-zinc-200 text-center p-2">
-            <Camera className={`w-8 h-8 ${camError ? 'text-red-400' : 'text-zinc-400 animate-pulse'}`} />
-            {camError && <span className="text-[10px] text-red-500 font-bold leading-tight mt-1 truncate w-full">{camError}</span>}
-          </div>
-        )}
-        <video 
-          ref={videoRef} 
-          autoPlay 
-          playsInline 
-          muted 
-          className="w-full h-full object-cover transform -scale-x-100 absolute inset-0 z-0" 
-        />
-      </div>
+      <CameraMirror cameraActive={cameraActive} camError={camError} videoRef={videoRef} />
       <div className="relative z-10 w-full h-full flex flex-col items-center justify-end pb-[10vh] px-4">
         
         {/* Animated Character (Peeking from behind card) */}
