@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.dirname(__file__))
+
 from database.database import Database
 import time
 from fastapi import FastAPI
@@ -288,7 +292,11 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
-pipeline = PerceptionPipeline()
+try:
+    pipeline = PerceptionPipeline()
+except Exception as e:
+    print(f"Warning: PerceptionPipeline disabled ({e})")
+    pipeline = None
 
 @app.websocket("/api/ws/session")
 async def websocket_endpoint(websocket: WebSocket):
@@ -312,16 +320,18 @@ async def websocket_endpoint(websocket: WebSocket):
 
 @app.get("/api/activities")
 def get_activities():
-    from activity.activity_definitions import ActivityDefinitions
-    defs = ActivityDefinitions()
+    from activity.activity_definitions import ACTIVITIES
     acts = []
-    for aid, meta in defs.get_all_activities().items():
+    for aid, meta in ACTIVITIES.items():
+        description = meta.get("instructions", "")
+        # Activity 1 doesn't have a specific description in the dict that fits well, 
+        # but "instructions" works. Let's provide a friendly fallback.
         acts.append({
             "id": aid,
             "name": meta["name"],
             "domain": meta["domain"],
-            "description": meta["description"],
-            "difficulty_levels": meta["difficulty_levels"]
+            "description": description,
+            "difficulty_levels": meta.get("difficulty_levels", ["Low"])
         })
     return acts
 
