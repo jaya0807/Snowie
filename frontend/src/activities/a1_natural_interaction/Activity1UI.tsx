@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Mic, CheckCircle2, ChevronRight, X } from "lucide-react";
+import { Mic, CheckCircle2, ChevronRight, X, Camera } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 // The 6 steps of our Animal Journey
@@ -26,12 +26,70 @@ export default function Activity1UI() {
   
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
+  
+  // Camera and Telemetry state
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const telemetryInterval = useRef<NodeJS.Timeout | null>(null);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [camError, setCamError] = useState('');
 
   useEffect(() => {
-    fetch(`http://localhost:8001/api/session/start?patient_id=P1&activity_id=A1`, { method: 'POST' })
-      .then(res => res.json())
-      .then(data => setSessionId(data.session_id))
-      .catch(err => console.error(err));
+    let ws: WebSocket;
+    
+    const initCameraAndSession = async () => {
+      // 1. Start Session
+      let sid = "";
+      try {
+        const res = await fetch(`http://localhost:8001/api/session/start?patient_id=P1&activity_id=A1`, { method: 'POST' });
+        const data = await res.json();
+        sid = data.session_id;
+        setSessionId(sid);
+      } catch(e) { console.error(e); }
+      
+      // 2. Start Camera
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          setCameraActive(true);
+        }
+      } catch(e: any) { console.error("Camera access denied", e); setCamError(e.message || "Denied"); }
+      
+      // 3. Start Telemetry WebSocket
+      ws = new WebSocket("ws://localhost:8001/api/ws/session");
+      wsRef.current = ws;
+      
+      ws.onopen = () => {
+        telemetryInterval.current = setInterval(() => {
+          if (videoRef.current && canvasRef.current && ws.readyState === WebSocket.OPEN) {
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
+            const ctx = canvas.getContext('2d');
+            if (ctx && video.videoWidth > 0) {
+              canvas.width = video.videoWidth;
+              canvas.height = video.videoHeight;
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              const base64Frame = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
+              ws.send(JSON.stringify({ type: "frame", image: base64Frame, session_id: sid }));
+            }
+          }
+        }, 200); // 5 FPS
+      };
+    };
+    
+    initCameraAndSession();
+    
+    return () => {
+      // Cleanup
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(t => t.stop());
+      }
+      if (telemetryInterval.current) clearInterval(telemetryInterval.current);
+      if (ws) ws.close();
+    };
   }, []);
 
   // Initialize Web Speech API for Native Voice Recognition
@@ -143,7 +201,27 @@ export default function Activity1UI() {
         </span>
       </div>
 
-      {/* 2. The Interactive Overlay (Foreground Layer) */}
+            {/* 2. The Interactive Overlay (Foreground Layer) */}
+      
+      {/* Hidden canvas for extracting frames */}
+      <canvas ref={canvasRef} className="hidden" />
+
+      {/* PIP Camera Mirror */}
+      <div className="absolute top-6 right-6 z-50 overflow-hidden w-32 h-32 md:w-48 md:h-48 rounded-full border-4 border-white shadow-[0_10px_30px_rgba(0,0,0,0.3)] bg-zinc-200 flex items-center justify-center transition-all duration-500">
+        {!cameraActive && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-zinc-200 text-center p-2">
+            <Camera className={`w-8 h-8 ${camError ? 'text-red-400' : 'text-zinc-400 animate-pulse'}`} />
+            {camError && <span className="text-[10px] text-red-500 font-bold leading-tight mt-1 truncate w-full">{camError}</span>}
+          </div>
+        )}
+        <video 
+          ref={videoRef} 
+          autoPlay 
+          playsInline 
+          muted 
+          className="w-full h-full object-cover transform -scale-x-100 absolute inset-0 z-0" 
+        />
+      </div>
       <div className="relative z-10 w-full h-full flex flex-col items-center justify-end pb-[10vh] px-4">
         
         {/* Animated Character (Peeking from behind card) */}
