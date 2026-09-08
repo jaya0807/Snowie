@@ -3,6 +3,11 @@
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import Activity1UI from "@/activities/a1_natural_interaction/Activity1UI";
+import Activity2UI from "@/activities/a2_follow_instruction/Activity2UI";
+import Activity3UI from "@/activities/a3_target_finding/Activity3UI";
+import Activity4UI from "@/activities/a4_imitation/Activity4UI";
+import Activity5UI from "@/activities/a5_emotion_social/Activity5UI";
+import Activity6UI from "@/activities/a6_controlled_challenge/Activity6UI";
 import { Play, Square, ArrowLeft, Camera as CameraIcon, Star } from "lucide-react";
 
 export default function ChildMode() {
