@@ -361,3 +361,20 @@ def get_goals(patient_id: str = "P1"):
             conn.commit()
         return goals
     return rows
+
+from pydantic import BaseModel
+
+class A1Submission(BaseModel):
+    session_id: str
+    name: str
+    feeling: str
+    animal: str
+    day_text: str
+
+@app.post("/api/activities/a1/submit")
+def submit_a1(data: A1Submission):
+    from activities.a1_natural_interaction.logic import Activity1Logic
+    logic = Activity1Logic(DB_PATH)
+    
+    result = logic.process_submission(data.session_id, data.dict())
+    return {"status": "success", "accuracy": result["accuracy"]}

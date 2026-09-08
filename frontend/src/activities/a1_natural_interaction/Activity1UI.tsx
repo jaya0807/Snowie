@@ -17,6 +17,7 @@ const STEPS = [
 export default function Activity1UI() {
   const router = useRouter();
   const [stepIndex, setStepIndex] = useState(0);
+  const [sessionId, setSessionId] = useState("");
   
   const [name, setName] = useState("");
   const [feeling, setFeeling] = useState("");
@@ -25,6 +26,13 @@ export default function Activity1UI() {
   
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    fetch(`http://localhost:8001/api/session/start?patient_id=P1&activity_id=A1`, { method: 'POST' })
+      .then(res => res.json())
+      .then(data => setSessionId(data.session_id))
+      .catch(err => console.error(err));
+  }, []);
 
   // Initialize Web Speech API for Native Voice Recognition
   useEffect(() => {
@@ -66,12 +74,33 @@ export default function Activity1UI() {
     }
   };
 
-  const nextStep = () => {
+  const nextStep = async () => {
     if (stepIndex < STEPS.length - 1) {
       setStepIndex(stepIndex + 1);
     } else {
       // Finish Activity - Send telemetry to backend and exit
-      fetch(`http://localhost:8001/api/session/end?session_id=mock_session`, { method: 'POST' }).catch(() => {});
+      const sid = sessionId || "mock_session";
+      
+      try {
+        // 1. Submit the conversational data
+        await fetch(`http://localhost:8001/api/activities/a1/submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: sid,
+            name: name,
+            feeling: feeling,
+            animal: favAnimal,
+            day_text: dayText
+          })
+        });
+        
+        // 2. End the session
+        await fetch(`http://localhost:8001/api/session/end?session_id=${sid}`, { method: 'POST' });
+      } catch (e) {
+        console.error("Failed to submit A1 data", e);
+      }
+      
       router.push('/dashboard');
     }
   };
