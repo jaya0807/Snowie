@@ -114,6 +114,26 @@ export default function ChildMode() {
     return <Activity1UI />;
   }
 
+  if (activityId === "A2") {
+    return <Activity2UI />;
+  }
+
+  if (activityId === "A3") {
+    return <Activity3UI />;
+  }
+
+  if (activityId === "A4") {
+    return <Activity4UI />;
+  }
+
+  if (activityId === "A5") {
+    return <Activity5UI />;
+  }
+
+  if (activityId === "A6") {
+    return <Activity6UI />;
+  }
+
   return (
     <div className="h-screen w-screen bg-zinc-950 flex flex-col items-center justify-center relative overflow-hidden font-sans">
       
@@ -176,6 +196,7 @@ export default function ChildMode() {
           </button>
         )}
       </div>
+
     </div>
   );
 }

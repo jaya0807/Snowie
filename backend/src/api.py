@@ -304,19 +304,51 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             data_str = await websocket.receive_text()
-            data = json.loads(data_str)
+            try:
+                data = json.loads(data_str)
+            except Exception as e:
+                print(f"[WS] JSON parse error: {e}")
+                continue
             
-            if data.get("type") == "frame":
-                # Process actual video frame!
-                telemetry = pipeline.process_base64_frame(data["image"])
-                await manager.broadcast(json.dumps(telemetry))
-            elif data.get("type") == "session_end":
-                await manager.broadcast(json.dumps({"type": "session_end", "sessionActive": False}))
+            msg_type = data.get("type")
+            
+            if msg_type == "frame":
+                try:
+                    if pipeline is None:
+                        continue
+                    telemetry = pipeline.process_base64_frame(data["image"])
+                    a4_success = telemetry.pop("a4_success_event", None)
+                    await websocket.send_text(json.dumps(telemetry))
+                    if a4_success:
+                        print(f"[WS] Sending pose_success: {a4_success}")
+                        await manager.broadcast(json.dumps(a4_success))
+                except Exception as e:
+                    print(f"[WS] Frame processing error: {e}")
+                    # Do NOT break — keep connection alive for next frame
+                    continue
+                    
+            elif msg_type == "set_target_pose":
+                try:
+                    pose = data.get("pose")
+                    print(f"[WS] set_target_pose received: {pose}")
+                    if pipeline:
+                        pipeline.set_target_pose(pose)
+                        print(f"[WS] Target pose set to: {pose}")
+                except Exception as e:
+                    print(f"[WS] set_target_pose error: {e}")
+                    
+            elif msg_type == "session_end":
+                try:
+                    await manager.broadcast(json.dumps({"type": "session_end", "sessionActive": False}))
+                except Exception as e:
+                    print(f"[WS] session_end error: {e}")
             
     except WebSocketDisconnect:
+        print("[WS] Client disconnected")
         manager.disconnect(websocket)
     except Exception as e:
-        print(f"WS Error: {e}")
+        print(f"[WS] Fatal connection error: {e}")
+        manager.disconnect(websocket)
 
 @app.get("/api/activities")
 def get_activities():
@@ -378,3 +410,92 @@ def submit_a1(data: A1Submission):
     
     result = logic.process_submission(data.session_id, data.dict())
     return {"status": "success", "accuracy": result["accuracy"]}
+
+class A2Submission(BaseModel):
+    session_id: str
+    metrics: dict
+    accuracy: float
+    avg_latency: float
+
+@app.post("/api/activities/a2/submit")
+def submit_a2(data: A2Submission):
+    from activities.a2_follow_instruction.logic import Activity2Logic
+    logic = Activity2Logic(DB_PATH)
+    
+    result = logic.process_submission(data.session_id, data.dict())
+    return {
+        "status": "success", 
+        "accuracy": result["accuracy"],
+        "avg_latency": result["avg_latency"]
+    }
+
+class A3Submission(BaseModel):
+    session_id: str
+    metrics: dict
+    accuracy: float
+    avg_latency: float
+
+@app.post("/api/activities/a3/submit")
+def submit_a3(data: A3Submission):
+    from activities.a3_target_finding.logic import Activity3Logic
+    logic = Activity3Logic(DB_PATH)
+    
+    result = logic.process_submission(data.session_id, data.dict())
+    return {
+        "status": "success", 
+        "accuracy": result["accuracy"],
+        "avg_latency": result["avg_latency"]
+    }
+
+class A5Submission(BaseModel):
+    session_id: str
+    metrics: dict
+    accuracy: float
+    avg_latency: float
+
+@app.post("/api/activities/a5/submit")
+def submit_a5(data: A5Submission):
+    from activities.a5_emotion_social.logic import Activity5Logic
+    logic = Activity5Logic(DB_PATH)
+    
+    result = logic.process_submission(data.session_id, data.dict())
+    return {
+        "status": "success", 
+        "accuracy": result["accuracy"],
+        "avg_latency": result["avg_latency"]
+    }
+
+class A6Submission(BaseModel):
+    session_id: str
+    metrics: dict
+    accuracy: float
+    avg_latency: float
+
+@app.post("/api/activities/a6/submit")
+def submit_a6(data: A6Submission):
+    from activities.a6_controlled_challenge.logic import Activity6Logic
+    logic = Activity6Logic(DB_PATH)
+    
+    result = logic.process_submission(data.session_id, data.dict())
+    return {
+        "status": "success", 
+        "accuracy": result["accuracy"],
+        "avg_latency": result["avg_latency"]
+    }
+class A4Submission(BaseModel):
+    session_id: str
+    metrics: dict
+    accuracy: float
+    avg_latency: float
+
+@app.post("/api/activities/a4/submit")
+def submit_a4(data: A4Submission):
+    from activities.a4_imitation.logic import Activity4Logic
+    logic = Activity4Logic(DB_PATH)
+    
+    result = logic.process_submission(data.session_id, data.dict())
+    return {
+        "status": "success", 
+        "accuracy": result["accuracy"],
+        "avg_latency": result["avg_latency"]
+    }

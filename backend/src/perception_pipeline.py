@@ -16,9 +16,65 @@ class PerceptionPipeline:
         self.head_extractor = HeadFeatureExtractor()
         self.engagement_extractor = EngagementFeatureExtractor()
         
+        # A4 Pose Validation State
+        self.target_pose = None
+        self.consecutive_frames_matched = 0
+        self.success_already_emitted = False
+        self.FRAMES_TO_CONFIRM = 2
+        self.MIN_VISIBILITY = 0.4
+        self._debug_frame_count = 0
+        
+    def set_target_pose(self, pose_id):
+        self.target_pose = pose_id
+        self.consecutive_frames_matched = 0
+        self.success_already_emitted = False
+        
+    def _validate_pose(self, pose_data, target):
+        if not pose_data: return False
+        
+        def get_y(name):
+            if name in pose_data and pose_data[name][2] >= self.MIN_VISIBILITY:
+                return pose_data[name][1]
+            return None
+
+        def get_x(name):
+            if name in pose_data and pose_data[name][2] >= self.MIN_VISIBILITY:
+                return pose_data[name][0]
+            return None
+            
+        lw_y, rw_y = get_y("left_wrist"), get_y("right_wrist")
+        lw_x, rw_x = get_x("left_wrist"), get_x("right_wrist")
+        nose_y = get_y("nose")
+        ls_y, rs_y = get_y("left_shoulder"), get_y("right_shoulder")
+
+        if target == "RAISE_ONE_HAND":
+            if nose_y is None: return False
+            return (lw_y is not None and lw_y < nose_y) or (rw_y is not None and rw_y < nose_y)
+            
+        elif target == "RAISE_BOTH_HANDS":
+            if nose_y is None: return False
+            return (lw_y is not None and lw_y < nose_y) and (rw_y is not None and rw_y < nose_y)
+            
+        elif target == "CLAP":
+            if lw_x is None or rw_x is None or lw_y is None or rw_y is None: return False
+            return abs(lw_x - rw_x) < 0.15 and abs(lw_y - rw_y) < 0.15
+            
+        elif target == "TOUCH_HEAD":
+            if nose_y is None: return False
+            if lw_y is None and rw_y is None: return False
+            left_near = lw_y is not None and abs(lw_y - nose_y) < 0.2
+            right_near = rw_y is not None and abs(rw_y - nose_y) < 0.2
+            return left_near or right_near
+            
+        elif target == "TOUCH_SHOULDERS":
+            if ls_y is None or rs_y is None: return False
+            left_near = lw_y is not None and abs(lw_y - ls_y) < 0.15
+            right_near = rw_y is not None and abs(rw_y - rs_y) < 0.15
+            return left_near or right_near
+
+        return False
+        
     def process_base64_frame(self, base64_img):
-        # Decode base64 to OpenCV frame
-        # Strip header (data:image/jpeg;base64,...)
         if ',' in base64_img:
             base64_img = base64_img.split(',')[1]
             
@@ -28,37 +84,46 @@ class PerceptionPipeline:
         
         timestamp = time.time()
         
-        # Run perception
         pose_res = self.pose_detector.process(frame, timestamp)
         face_res = self.face_detector.process(frame, timestamp)
         
+        pose_data = pose_res.get("pose", {})
+        
+        # Debug every 25 frames
+        self._debug_frame_count += 1
+        if self._debug_frame_count % 25 == 0:
+            print(f"[A4-DEBUG] target={self.target_pose} | landmarks={list(pose_data.keys())} | consec={self.consecutive_frames_matched}")
+            if self.target_pose and pose_data:
+                check = self._validate_pose(pose_data, self.target_pose)
+                print(f"[A4-DEBUG] validate({self.target_pose})={check}")
+                for key in ['nose', 'left_wrist', 'right_wrist', 'left_shoulder', 'right_shoulder']:
+                    if key in pose_data:
+                        x, y, vis = pose_data[key]
+                        print(f"  {key}: x={x:.3f} y={y:.3f} vis={vis:.2f}")
+        
         perception_packet = {
             "timestamp": timestamp,
-            "pose": pose_res.get("pose", {}),
+            "pose": pose_data,
             "face": face_res.get("face", {})
         }
         
-        # Extract features
         move_feat = self.movement_extractor.extract(perception_packet)
         head_feat = self.head_extractor.extract(perception_packet)
         eng_feat = self.engagement_extractor.extract(perception_packet)
         
-        # Combine into telemetry
         velocity = move_feat.get("velocity", 0.0)
         orientation = face_res.get("face", {}).get("orientation", "AWAY")
         
-        # Simple engagement heuristic for UI demo: 
-        # FORWARD = 90-100%, LEFT/RIGHT = 50-70%, AWAY = 10-30%
         eng_score = 95
         if orientation in ["LEFT", "RIGHT"]:
             eng_score = 60
         elif orientation in ["AWAY", "DOWN"]:
             eng_score = 20
             
-        return {
+        result = {
             "type": "telemetry",
             "engagement": eng_score,
-            "latency": "0.0", # Need game logic for latency
+            "latency": "0.0",
             "event": {
                 "time": "Live",
                 "msg": f"Head: {orientation} | Motion: {velocity:.2f}",
@@ -66,3 +131,20 @@ class PerceptionPipeline:
             },
             "sessionActive": True
         }
+        
+        # A4 pose validation (was dead code before — early return bug fixed)
+        if self.target_pose and not self.success_already_emitted:
+            if self._validate_pose(pose_data, self.target_pose):
+                self.consecutive_frames_matched += 1
+                print(f"[A4-DEBUG] MATCHED! consecutive={self.consecutive_frames_matched}/{self.FRAMES_TO_CONFIRM}")
+                if self.consecutive_frames_matched >= self.FRAMES_TO_CONFIRM:
+                    self.success_already_emitted = True
+                    print(f"[A4-DEBUG] *** POSE SUCCESS: {self.target_pose} ***")
+                    result["a4_success_event"] = {
+                        "type": "pose_success",
+                        "pose": self.target_pose
+                    }
+            else:
+                self.consecutive_frames_matched = 0
+                
+        return result

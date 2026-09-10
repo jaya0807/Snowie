@@ -1,28 +1,31 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Mic, CheckCircle2, ChevronRight, X, Camera } from "lucide-react";
+import { useState } from "react";
+import { Mic, X } from "lucide-react";
 import BackgroundScene from "./components/BackgroundScene";
-import CameraMirror from "./components/CameraMirror";
-import FeelingSelector from "./components/FeelingSelector";
-import AnimalSelector from "./components/AnimalSelector";
+import HiddenCameraProcessor from "./components/HiddenCameraProcessor";
+import AnimalCharacter from "./components/AnimalCharacter";
+import DialogueBubble from "./components/DialogueBubble";
+import ResponseOptions from "./components/ResponseOptions";
+import FeedbackState from "./components/FeedbackState";
+import ContinueButton from "./components/ContinueButton";
 import { useVoiceRecognition } from "./components/useVoiceRecognition";
 import { useRouter } from "next/navigation";
 
-// The 6 steps of our Animal Journey
 const STEPS = [
-  { id: "intro", char: "🦊", name: "Foxie", message: "Hi! I'm Foxie!\nI can't wait to meet you!\nLet's get to know each other. 💛", action: "✨ Let's Talk!" },
-  { id: "name", char: "🐰", name: "Bunny", message: "And I'm Bunny! What's your name? 😊", action: "✨ That's me!" },
-  { id: "feeling", char: "🐻", name: "Bear", message: "How are you feeling today?", action: "" },
-  { id: "animal", char: "🐼", name: "Panda", message: "What's your favourite animal?", action: "" },
-  { id: "day", char: "🐶", name: "Puppy", message: "Tell me about your day. I'm listening!\n(There's no right or wrong answer. 💛)", action: "✨ Done!" },
-  { id: "outro", char: "🦁", name: "Lion", message: "You've met everyone!\nReady for your adventure?", action: "🚀 Let's Go!" }
+  { id: "intro", charImage: "fox.png", name: "Foxie", message: "Hi! I'm Foxie!\nI can't wait to meet you!\nLet's get to know each other. 💛", action: "✨ Let's Talk!" },
+  { id: "name", charImage: "bunny.png", name: "Bunny", message: "And I'm Bunny! What's your name? 😊", action: "✨ That's me!" },
+  { id: "feeling", charImage: "bear.png", name: "Bear", message: "How are you feeling today?", action: "Continue" },
+  { id: "animal", charImage: "panda.png", name: "Panda", message: "What's your favourite animal?", action: "Continue" },
+  { id: "day", charImage: "puppy.png", name: "Puppy", message: "Tell me about your day. I'm listening!\n(There's no right or wrong answer. 💛)", action: "✨ Done!" },
+  { id: "outro", charImage: "lion.png", name: "Lion", message: "You've met everyone!\nReady for your adventure?", action: "🚀 Let's Go!" }
 ];
 
 export default function Activity1UI() {
   const router = useRouter();
   const [stepIndex, setStepIndex] = useState(0);
-  const [sessionId, setSessionId] = useState("");
+  const [sessionId, setSessionId] = useState("a1-session-" + Date.now());
+  const [feedbackState, setFeedbackState] = useState<string | null>(null);
   
   const [name, setName] = useState("");
   const [feeling, setFeeling] = useState("");
@@ -30,263 +33,187 @@ export default function Activity1UI() {
   const [dayText, setDayText] = useState("");
   
   const { isListening, toggleListen } = useVoiceRecognition(stepIndex, setName, setDayText);
-  
-  // Camera and Telemetry state
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const wsRef = useRef<WebSocket | null>(null);
-  const telemetryInterval = useRef<NodeJS.Timeout | null>(null);
-  const [cameraActive, setCameraActive] = useState(false);
-  const [camError, setCamError] = useState('');
 
-  useEffect(() => {
-    let ws: WebSocket;
-    
-    const initCameraAndSession = async () => {
-      // 1. Start Session
-      let sid = "";
-      try {
-        const res = await fetch(`http://localhost:8001/api/session/start?patient_id=P1&activity_id=A1`, { method: 'POST' });
-        const data = await res.json();
-        sid = data.session_id;
-        setSessionId(sid);
-      } catch(e) { console.error(e); }
-      
-      // 2. Start Camera
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          setCameraActive(true);
-        }
-      } catch(e: any) { console.error("Camera access denied", e); setCamError(e.message || "Denied"); }
-      
-      // 3. Start Telemetry WebSocket
-      ws = new WebSocket("ws://localhost:8001/api/ws/session");
-      wsRef.current = ws;
-      
-      ws.onopen = () => {
-        telemetryInterval.current = setInterval(() => {
-          if (videoRef.current && canvasRef.current && ws.readyState === WebSocket.OPEN) {
-            const video = videoRef.current;
-            const canvas = canvasRef.current;
-            const ctx = canvas.getContext('2d');
-            if (ctx && video.videoWidth > 0) {
-              canvas.width = video.videoWidth;
-              canvas.height = video.videoHeight;
-              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-              const base64Frame = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
-              ws.send(JSON.stringify({ type: "frame", image: base64Frame, session_id: sid }));
-            }
-          }
-        }, 200); // 5 FPS
-      };
-    };
-    
-    initCameraAndSession();
-    
-    return () => {
-      // Cleanup
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(t => t.stop());
-      }
-      if (telemetryInterval.current) clearInterval(telemetryInterval.current);
-      if (ws) ws.close();
-    };
-  }, []);
-
-
-
-  const nextStep = async () => {
-    if (stepIndex < STEPS.length - 1) {
+  const handleNextStep = async () => {
+    setFeedbackState(null);
+    if (STEPS[stepIndex].id === 'feeling' && feeling === 'Not so good') {
+      setStepIndex(STEPS.length - 1);
+    } else if (stepIndex < STEPS.length - 1) {
       setStepIndex(stepIndex + 1);
     } else {
-      // Finish Activity - Send telemetry to backend and exit
-      const sid = sessionId || "mock_session";
-      
+      // Finish Activity
       try {
-        // 1. Submit the conversational data
         await fetch(`http://localhost:8001/api/activities/a1/submit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            session_id: sid,
-            name: name,
-            feeling: feeling,
-            animal: favAnimal,
-            day_text: dayText
+            session_id: sessionId,
+            name, feeling, animal: favAnimal, day_text: dayText
           })
         });
-        
-        // 2. End the session
-        await fetch(`http://localhost:8001/api/session/end?session_id=${sid}`, { method: 'POST' });
+        await fetch(`http://localhost:8001/api/session/end?session_id=${sessionId}`, { method: 'POST' });
       } catch (e) {
         console.error("Failed to submit A1 data", e);
       }
-      
       router.push('/dashboard');
     }
   };
 
   const step = STEPS[stepIndex];
+  
+  const getFeedbackMessage = () => {
+    if (step.id === 'name') return `Nice to meet you, ${name || "friend"}! 💛`;
+    if (step.id === 'feeling') {
+      if (feeling === 'Happy') return "Yay! I’m so happy you’re feeling happy! 💛\nLet’s make this adventure even more fun!";
+      if (feeling === 'Excited') return "Woohoo! You’re feeling excited! 🎉\nI can’t wait to go on an adventure with you!";
+      if (feeling === 'Calm') return "That’s nice! You’re feeling calm and peaceful. 🌸\nLet’s enjoy our adventure together!";
+      if (feeling === 'Sleepy') return "Aww, feeling sleepy? 😴\nLet’s start with a gentle and fun adventure!";
+      if (feeling === 'Not so good') return "Aww, I’m sorry you’re not feeling so good. 💛\nLet’s cheer you up with a fun adventure! ✨\nReady to play?";
+      return `That sounds lovely! I'm glad you're here. ✨`;
+    }
+    if (step.id === 'animal') return `I love ${favAnimal}s too! 🌿`;
+    if (step.id === 'day') return `Thanks for sharing that with me! 🐶`;
+    return "Great!";
+  };
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden font-sans">
-      {/* 1. The Art Assets (Background Layer) */}
-      <BackgroundScene />
+    <div className="relative w-full min-h-[100dvh] font-sans flex flex-col items-center py-6 overflow-x-hidden overflow-y-auto">
+      {/* Fixed background to prevent layout stretching */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <BackgroundScene />
+      </div>
+      <div className="fixed top-0 left-0 w-0 h-0 z-0 pointer-events-none">
+        <HiddenCameraProcessor sessionId={sessionId} activityId="A1" />
+      </div>
 
       {/* Close Button */}
       <button 
         onClick={() => router.push('/dashboard')}
-        className="absolute top-6 left-6 z-50 bg-white/50 hover:bg-white p-3 rounded-full backdrop-blur transition-all shadow-sm"
+        className="fixed top-6 left-4 md:left-6 z-50 bg-white/50 hover:bg-white p-3 rounded-full backdrop-blur transition-all shadow-sm"
       >
         <X className="w-6 h-6 text-zinc-600" />
       </button>
 
       {/* Progress Indicator */}
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 bg-white/80 backdrop-blur-md px-6 py-2 rounded-full shadow-sm border border-white flex items-center gap-2">
+      <div className="fixed top-6 right-4 md:left-1/2 md:-translate-x-1/2 z-50 bg-white/80 backdrop-blur-md px-4 py-2 md:px-6 md:py-2 rounded-full shadow-sm border border-white flex items-center gap-2 w-max max-w-[50%] md:max-w-none">
         <span className="text-yellow-500 text-sm">⭐</span>
         <span className="font-bold text-xs uppercase tracking-widest text-zinc-700">
           Meet The Animal Friends • {stepIndex + 1} / 6
         </span>
       </div>
 
-            {/* 2. The Interactive Overlay (Foreground Layer) */}
-      
-      {/* Hidden canvas for extracting frames */}
-      <canvas ref={canvasRef} className="hidden" />
+      <div className="relative z-30 w-full max-w-[800px] flex flex-col items-center px-4 my-auto mt-28 mb-12">
+        <AnimalCharacter 
+          charImage={step.charImage} 
+          name={step.name} 
+          isReacting={feedbackState !== null} 
+        />
 
-      {/* PIP Camera Mirror */}
-      <CameraMirror cameraActive={cameraActive} camError={camError} videoRef={videoRef} />
-      <div className="relative z-10 w-full h-full flex flex-col items-center justify-end pb-[10vh] px-4">
-        
-        {/* Animated Character (Peeking from behind card) */}
-        <div 
-          key={step.char} 
-          className="text-[140px] md:text-[180px] drop-shadow-[0_20px_30px_rgba(0,0,0,0.2)] animate-bounce mb-[-60px] md:mb-[-80px] z-10 transition-all duration-700 transform hover:scale-110 origin-bottom"
-          style={{ animationDuration: '2.5s' }}
-        >
-          {step.char}
-        </div>
-
-        {/* The White Card */}
-        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-3xl rounded-[50px] shadow-[0_20px_60px_rgba(0,0,0,0.1),inset_0_4px_0_rgba(255,255,255,1)] p-10 md:p-14 flex flex-col items-center text-center border-[8px] border-white/50 transition-all duration-500 z-20">
-          
-          <h2 className="text-3xl md:text-4xl font-extrabold text-[#176B9C] mb-6 leading-tight whitespace-pre-line font-comic">
-            {step.message}
+        <DialogueBubble name={step.name} charImage={step.charImage}>
+          <h2 className="text-xl md:text-2xl font-extrabold text-[#176B9C] leading-relaxed">
+            {step.message.split('\n').map((line, i) => <p key={i}>{line}</p>)}
           </h2>
+        </DialogueBubble>
 
-          {/* STEP 2: Name Input */}
-          {stepIndex === 1 && (
-            <div className="w-full max-w-md mb-8">
-              <div className="relative flex items-center mb-4">
-                <input 
-                  type="text" 
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Type your name here..."
-                  className="w-full bg-zinc-100 border-2 border-zinc-200 rounded-2xl px-6 py-4 text-xl font-bold text-zinc-700 focus:outline-none focus:border-brand transition-colors"
-                />
-              </div>
-              <button 
-                onClick={toggleListen}
-                className={`flex items-center justify-center gap-2 w-full py-3 rounded-xl border-2 transition-all ${
-                  isListening ? 'bg-red-50 border-red-200 text-red-500 animate-pulse' : 'bg-white border-b-4 border-brand text-brand hover:bg-brand/5 active:border-b-0 active:translate-y-1 shadow-sm'
-                }`}
-              >
-                <Mic className="w-5 h-5" />
-                <span className="font-bold">{isListening ? 'Listening...' : '🎤 Or tell me!'}</span>
-              </button>
-            </div>
+        <div className="w-full flex flex-col items-center justify-center mt-6 z-40 max-w-lg">
+
+          {/* Intro & Outro */}
+          {(step.id === 'intro' || step.id === 'outro') && (
+            <ContinueButton onClick={handleNextStep} label={step.action} />
           )}
 
-          {/* STEP 3: Feeling Input */}
-          {stepIndex === 2 && (
-            <div className="flex flex-wrap justify-center gap-4 mb-8">
-              {[
-                { emoji: "😊", label: "Happy" },
-                { emoji: "🤩", label: "Excited" },
-                { emoji: "😌", label: "Calm" },
-                { emoji: "😴", label: "Sleepy" },
-                { emoji: "😟", label: "Not so good" },
-              ].map(f => (
-                <button
-                  key={f.label}
-                  onClick={() => {
-                    setFeeling(f.label);
-                    setTimeout(nextStep, 1000); // Auto-advance after 1 sec
-                  }}
-                  className={`flex flex-col items-center justify-center p-4 rounded-3xl border-4 transition-all duration-300 transform hover:scale-110 ${
-                    feeling === f.label ? 'border-brand bg-brand/10 scale-110' : 'border-transparent bg-zinc-50 hover:bg-zinc-100'
+          {/* STEP 2: Name */}
+          {step.id === 'name' && !feedbackState && (
+            <div className="w-full max-w-sm mt-4 animate-[fadeIn_0.5s_ease-out]">
+              <input 
+                type="text" 
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Type your name here..."
+                className="w-full bg-sky-50 border-2 border-sky-100 rounded-2xl px-6 py-4 text-xl font-bold text-sky-900 focus:outline-none focus:border-[#176B9C] transition-colors mb-4 text-center"
+              />
+              <div className="flex flex-col gap-3">
+                <button 
+                  onClick={toggleListen}
+                  className={`flex items-center justify-center gap-2 w-full py-3 rounded-xl border-2 transition-all ${
+                    isListening ? 'bg-red-50 border-red-200 text-red-500 animate-pulse' : 'bg-white border-[#176B9C] text-[#176B9C] hover:bg-sky-50 shadow-sm'
                   }`}
                 >
-                  <span className="text-5xl mb-2 drop-shadow-md">{f.emoji}</span>
-                  <span className="font-bold text-zinc-600 text-sm">{f.label}</span>
+                  <Mic className="w-5 h-5" />
+                  <span className="font-bold">{isListening ? 'Listening...' : '🎤 Tell me!'}</span>
                 </button>
-              ))}
+                <ContinueButton onClick={() => setFeedbackState('name')} label={step.action} />
+              </div>
             </div>
           )}
 
-          {/* STEP 4: Animal Input */}
-          {stepIndex === 3 && (
-            <div className="flex flex-wrap justify-center gap-4 mb-8">
-              {[
+          {/* STEP 3: Feeling */}
+          {step.id === 'feeling' && (
+            <>
+              <ResponseOptions 
+                options={[
+                  { emoji: "😊", label: "Happy" },
+                  { emoji: "🤩", label: "Excited" },
+                  { emoji: "😌", label: "Calm" },
+                  { emoji: "😴", label: "Sleepy" },
+                  { emoji: "😟", label: "Not so good" }
+                ]}
+                selectedValue={feeling}
+                disabled={feedbackState !== null}
+                onSelect={(val) => { setFeeling(val); setFeedbackState('feeling'); }}
+              />
+            </>
+          )}
+
+          {/* STEP 4: Animal */}
+          {step.id === 'animal' && (
+            <ResponseOptions 
+              options={[
                 { emoji: "🐶", label: "Dog" },
                 { emoji: "🐱", label: "Cat" },
                 { emoji: "🐼", label: "Panda" },
                 { emoji: "🦁", label: "Lion" },
                 { emoji: "🐰", label: "Bunny" },
-                { emoji: "🦋", label: "Butterfly" },
-              ].map(a => (
-                <button
-                  key={a.label}
-                  onClick={() => {
-                    setFavAnimal(a.label);
-                    setTimeout(nextStep, 1000);
-                  }}
-                  className={`flex flex-col items-center justify-center p-4 w-24 h-24 rounded-3xl border-4 transition-all duration-300 transform hover:scale-110 ${
-                    favAnimal === a.label ? 'border-brand bg-brand/10 scale-110' : 'border-transparent bg-zinc-50 hover:bg-zinc-100'
-                  }`}
-                >
-                  <span className="text-5xl drop-shadow-md">{a.emoji}</span>
-                  <span className="font-bold text-zinc-600 text-xs mt-2">{a.label}</span>
-                </button>
-              ))}
-            </div>
+                { emoji: "🦋", label: "Butterfly" }
+              ]}
+              selectedValue={favAnimal}
+              disabled={feedbackState !== null}
+              onSelect={(val) => { setFavAnimal(val); setFeedbackState('animal'); }}
+            />
           )}
 
           {/* STEP 5: Day Reflection */}
-          {stepIndex === 4 && (
-            <div className="w-full max-w-md mb-8">
+          {step.id === 'day' && !feedbackState && (
+            <div className="w-full max-w-sm mt-4 animate-[fadeIn_0.5s_ease-out]">
               <textarea 
                 value={dayText}
                 onChange={(e) => setDayText(e.target.value)}
                 placeholder="I played outside and..."
-                className="w-full bg-zinc-50 border-2 border-zinc-200 rounded-2xl px-6 py-4 text-lg font-medium text-zinc-700 h-32 resize-none focus:outline-none focus:border-brand transition-colors mb-4"
+                className="w-full bg-sky-50 border-2 border-sky-100 rounded-2xl px-6 py-4 text-lg font-medium text-sky-900 h-28 resize-none focus:outline-none focus:border-[#176B9C] transition-colors mb-4 text-center"
               />
-              <button 
-                onClick={toggleListen}
-                className={`flex items-center justify-center gap-2 w-full py-4 rounded-xl border-2 transition-all ${
-                  isListening ? 'bg-red-50 border-red-200 text-red-500 animate-pulse' : 'bg-brand border-b-4 border-brand-dark text-white hover:brightness-110 active:border-b-0 active:translate-y-1 shadow-lg shadow-brand/30'
-                }`}
-              >
-                <Mic className="w-6 h-6" />
-                <span className="font-bold text-lg">{isListening ? 'Listening...' : '🎤 Talk to Puppy'}</span>
-              </button>
+              <div className="flex flex-col gap-3">
+                <button 
+                  onClick={toggleListen}
+                  className={`flex items-center justify-center gap-2 w-full py-4 rounded-xl border-2 transition-all ${
+                    isListening ? 'bg-red-50 border-red-200 text-red-500 animate-pulse' : 'bg-[#176B9C] border-sky-900 text-white hover:brightness-110 shadow-md'
+                  }`}
+                >
+                  <Mic className="w-6 h-6" />
+                  <span className="font-bold text-lg">{isListening ? 'Listening...' : '🎤 Talk to Puppy'}</span>
+                </button>
+                <ContinueButton onClick={() => setFeedbackState('day')} label={step.action} />
+              </div>
             </div>
           )}
 
-          {/* Action Button (if step has one) */}
-          {step.action && (
-            <button 
-              onClick={nextStep}
-              className="bg-[#FF7A00] hover:bg-[#FF8C20] text-white font-black text-2xl px-14 py-6 rounded-full shadow-[0_8px_0_#CC6200,0_15px_30px_rgba(255,122,0,0.5)] transition-all duration-300 transform hover:-translate-y-1 active:translate-y-2 active:shadow-[0_0px_0_#CC6200] flex items-center gap-3"
-            >
-              {step.action}
-            </button>
+          {/* Shared Feedback State Display */}
+          {feedbackState && (
+             <FeedbackState 
+               message={getFeedbackMessage()} 
+               onContinue={handleNextStep} 
+               continueLabel="Continue" 
+             />
           )}
-
         </div>
       </div>
     </div>
