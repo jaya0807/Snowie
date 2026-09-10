@@ -339,7 +339,7 @@ export default function Activity5UI() {
                 
                 {(!subStep.includes("feedback") || isCorrect === false) ? (
                   <div className="grid grid-cols-2 gap-4 w-full">
-                    { (subStep.includes("social") ? currentTask.social_options : currentTask.options).map((opt) => (
+                    { (subStep.includes("social") ? (currentTask.social_options || []) : currentTask.options).map((opt) => (
                        <button 
                          key={opt.id}
                          onClick={() => handleAnswer(opt.id, subStep.includes("social"))}
