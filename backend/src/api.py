@@ -268,7 +268,7 @@ from fastapi import WebSocket, WebSocketDisconnect
 from typing import List
 import json
 
-from perception_pipeline import PerceptionPipeline
+# from perception_pipeline import PerceptionPipeline
 
 class ConnectionManager:
     def __init__(self):
@@ -292,11 +292,9 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
-try:
-    pipeline = PerceptionPipeline()
-except Exception as e:
-    print(f"Warning: PerceptionPipeline disabled ({e})")
-    pipeline = None
+# Hard bypass MediaPipe to prevent Apple Silicon SIGABRT
+pipeline = None
+print("Warning: PerceptionPipeline disabled due to architecture incompatibility")
 
 @app.websocket("/api/ws/session")
 async def websocket_endpoint(websocket: WebSocket):
