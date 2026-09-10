@@ -1,42 +1,15 @@
 "use client";
+import BackgroundScene from "./components/BackgroundScene";
+
+import HiddenCameraProcessor from "@/activities/a1_natural_interaction/components/HiddenCameraProcessor";
+
+import { LEVELS } from "./components/data";
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { X, ArrowRight, RefreshCcw, Sparkles } from "lucide-react";
 
 // The levels
-const LEVELS = [
-  {
-    id: "moon",
-    name: "Moon",
-    color: "from-slate-700 to-slate-900",
-    choicesCount: 3,
-    target: "rocket",
-    distractors: ["moon", "star", "comet"],
-    feedbackPos: "Great job, Space Explorer! 🌙",
-    feedbackNeg: "Almost! Try again! 🚀"
-  },
-  {
-    id: "mars",
-    name: "Mars",
-    color: "from-red-900 to-orange-900",
-    choicesCount: 5,
-    target: "rocket",
-    distractors: ["planet_ringed", "star", "moon", "comet", "satellite", "ufo", "alien"],
-    feedbackPos: "Amazing! You found it on Mars! 🔴",
-    feedbackNeg: "Keep looking, Explorer! 🚀"
-  },
-  {
-    id: "galaxy",
-    name: "Galaxy",
-    color: "from-indigo-900 via-purple-900 to-black",
-    choicesCount: 8,
-    target: "rocket",
-    distractors: ["planet_ringed", "star", "moon", "comet", "satellite", "ufo", "alien", "sparkles", "galaxy"],
-    feedbackPos: "Incredible! You conquered the Galaxy! 🌌",
-    feedbackNeg: "It's tricky out here, try again! 🚀"
-  }
-];
 
 export default function Activity6UI() {
   const router = useRouter();
@@ -53,60 +26,17 @@ export default function Activity6UI() {
   const [startTime, setStartTime] = useState<number>(0);
   const [totalLatency, setTotalLatency] = useState<number>(0);
 
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const wsRef = useRef<WebSocket | null>(null);
-  const telemetryInterval = useRef<NodeJS.Timeout | null>(null);
-
+  // Session init
   useEffect(() => {
-    let ws: WebSocket;
     const initSession = async () => {
-      let sid = "mock_session_a6";
       try {
         const res = await fetch(`http://localhost:8001/api/session/start?activity_id=A6`, { method: 'POST' });
         const data = await res.json();
-        sid = data.session_id;
-        setSessionId(sid);
-      } catch (e) { console.error(e); }
-      
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (e: unknown) { console.error("Camera access denied", e); }
-      
-      ws = new WebSocket("ws://localhost:8001/api/ws/session");
-      wsRef.current = ws;
-      
-      ws.onopen = () => {
-        telemetryInterval.current = setInterval(() => {
-          if (videoRef.current && canvasRef.current && ws.readyState === WebSocket.OPEN) {
-            const video = videoRef.current;
-            const canvas = canvasRef.current;
-            const ctx = canvas.getContext('2d');
-            if (ctx && video.videoWidth > 0) {
-              canvas.width = video.videoWidth;
-              canvas.height = video.videoHeight;
-              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-              const base64Frame = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
-              ws.send(JSON.stringify({ type: "frame", image: base64Frame, session_id: sid }));
-            }
-          }
-        }, 200);
-      };
+        setSessionId(data.session_id);
+      } catch(e) { console.error(e); }
     };
     initSession();
-    return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(t => t.stop());
-      }
-      if (telemetryInterval.current) clearInterval(telemetryInterval.current);
-      if (ws) ws.close();
-    };
   }, []);
-
   const generateChoices = (levelIdx: number) => {
     const level = LEVELS[levelIdx];
     let selectedChoices = [level.target];
@@ -190,23 +120,10 @@ export default function Activity6UI() {
   return (
     <div className={`relative w-screen h-screen overflow-hidden font-sans bg-gradient-to-br ${currentLevel ? currentLevel.color : 'from-indigo-900 to-black'} transition-colors duration-1000`}>
       
-      {/* Hidden camera & canvas */}
-      <video ref={videoRef} autoPlay playsInline muted className="hidden" />
-      <canvas ref={canvasRef} className="hidden" />
+      {/* Hidden camera & telemetry */}
+      <HiddenCameraProcessor sessionId={sessionId || "mock"} activityId="A6" />
       
-      {/* Background Decor */}
-      <div className="absolute inset-0 pointer-events-none opacity-40">
-        <div className="absolute top-[10%] left-[20%] animate-[bounce_8s_ease-in-out_infinite]">
-          <img src="/assets/space/star.png" alt="Star" className="w-16 h-16 drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]" />
-        </div>
-        <div className="absolute bottom-[20%] right-[15%] animate-[bounce_10s_ease-in-out_infinite_reverse]">
-          <img src="/assets/space/star.png" alt="Star" className="w-24 h-24 drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]" />
-        </div>
-        <div className="absolute top-[50%] left-[5%] opacity-20">
-          <img src="/assets/space/galaxy.png" alt="Galaxy" className="w-[800px] -rotate-12 animate-[spin_120s_linear_infinite]" />
-        </div>
-      </div>
-
+      <BackgroundScene />
       {/* Exit Button */}
       <button onClick={finishActivity} className="absolute top-6 left-6 z-50 bg-white/10 hover:bg-white/20 text-white rounded-full p-4 backdrop-blur-md transition-all shadow-md">
         <X className="w-8 h-8" />

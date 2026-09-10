@@ -1,4 +1,4 @@
-import { GiMoon, GiPineTree, GiRocketFlight, GiAirBalloon, GiSpikyField, GiFlowerPot, GiRingedPlanet, GiStarsStack, GiCastle } from "react-icons/gi";
+import { GiCastle, GiRingedPlanet, GiRocketFlight, GiFlowerPot, GiStarsStack, GiAirBalloon, GiSpikyField, GiPineTree, GiMoon } from "react-icons/gi";
 import { FaCloud } from "react-icons/fa";
 
 export default function BackgroundScene() {

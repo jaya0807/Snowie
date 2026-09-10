@@ -1,4 +1,9 @@
 "use client";
+import BackgroundScene from "./components/BackgroundScene";
+
+import HiddenCameraProcessor from "@/activities/a1_natural_interaction/components/HiddenCameraProcessor";
+
+import { speak, TASKS } from "./components/data";
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -11,72 +16,7 @@ import {
 } from "react-icons/gi";
 import { FaCloud } from "react-icons/fa";
 
-// Speak utility using Web Speech API
-const speak = (text: string) => {
-  if (typeof window !== "undefined" && window.speechSynthesis) {
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.9;
-    utterance.pitch = 1.1; // Piratey pitch
-    window.speechSynthesis.speak(utterance);
-  }
-};
 
-type TreasureObject = {
-  id: string;
-  type: string;
-  color: string;
-  icon: any;
-};
-
-// Task Bank Pool
-const TASKS = [
-  {
-    level: 1,
-    instruction: "Can you find the GOLD COIN?",
-    target: "gold_coin",
-    objects: [
-      { id: "gold_coin", type: "coin", color: "text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.6)]", icon: GiCoins },
-      { id: "pirate_hat", type: "hat", color: "text-gray-800", icon: GiPirateHat },
-      { id: "shell", type: "shell", color: "text-pink-300", icon: GiScallop },
-      { id: "compass", type: "compass", color: "text-orange-400", icon: GiCompass }
-    ]
-  },
-  {
-    level: 2,
-    instruction: "Can you find the TREASURE PURSE?",
-    target: "treasure_purse",
-    objects: [
-      { id: "treasure_purse", type: "purse", color: "text-amber-700", icon: GiSwapBag },
-      { id: "pirate_hat", type: "hat", color: "text-gray-800", icon: GiPirateHat },
-      { id: "gold_coin", type: "coin", color: "text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.6)]", icon: GiCoins },
-      { id: "compass", type: "compass", color: "text-orange-400", icon: GiCompass },
-      { id: "shell", type: "shell", color: "text-pink-300", icon: GiScallop },
-      { id: "key", type: "key", color: "text-yellow-500", icon: GiKey },
-      { id: "gem", type: "gem", color: "text-blue-500", icon: GiGemPendant },
-      { id: "map", type: "map", color: "text-yellow-100", icon: GiTreasureMap }
-    ]
-  },
-  {
-    level: 3,
-    instruction: "Look closely! Can you find the MAGICAL GEM?",
-    target: "gem",
-    objects: [
-      { id: "gold_coin", type: "coin", color: "text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.6)]", icon: GiCoins },
-      { id: "silver_coin", type: "coin", color: "text-gray-400", icon: GiCoins },
-      { id: "bronze_coin", type: "coin", color: "text-amber-800", icon: GiCoins },
-      { id: "gold_key", type: "key", color: "text-yellow-400", icon: GiKey },
-      { id: "treasure_purse", type: "purse", color: "text-amber-700", icon: GiSwapBag },
-      { id: "pirate_hat", type: "hat", color: "text-gray-800", icon: GiPirateHat },
-      { id: "gem", type: "gem", color: "text-blue-500", icon: GiGemPendant },
-      { id: "compass", type: "compass", color: "text-orange-400", icon: GiCompass },
-      { id: "shell", type: "shell", color: "text-pink-300", icon: GiScallop },
-      { id: "map", type: "map", color: "text-yellow-100", icon: GiTreasureMap },
-      { id: "ring", type: "ring", color: "text-red-400", icon: GiDiamondRing },
-      { id: "star", type: "star", color: "text-yellow-300", icon: GiStarMedal }
-    ]
-  }
-];
 
 export default function Activity3UI() {
   const router = useRouter();
@@ -98,67 +38,17 @@ export default function Activity3UI() {
     return () => clearTimeout(timer);
   }, []);
   
-  // Camera and Telemetry state
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const wsRef = useRef<WebSocket | null>(null);
-  const telemetryInterval = useRef<NodeJS.Timeout | null>(null);
-
+  // Session init
   useEffect(() => {
-    let ws: WebSocket;
-    const initCameraAndSession = async () => {
-      // 1. Start Session
-      let sid = "mock_session_a3";
+    const initSession = async () => {
       try {
         const res = await fetch(`http://localhost:8001/api/session/start?activity_id=A3`, { method: 'POST' });
         const data = await res.json();
-        sid = data.session_id;
-        setSessionId(sid);
+        setSessionId(data.session_id);
       } catch(e) { console.error(e); }
-      
-      // 2. Start Camera
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch(e: any) { console.error("Camera access denied", e); }
-      
-      // 3. Start Telemetry WebSocket
-      ws = new WebSocket("ws://localhost:8001/api/ws/session");
-      wsRef.current = ws;
-      
-      ws.onopen = () => {
-        telemetryInterval.current = setInterval(() => {
-          if (videoRef.current && canvasRef.current && ws.readyState === WebSocket.OPEN) {
-            const video = videoRef.current;
-            const canvas = canvasRef.current;
-            const ctx = canvas.getContext('2d');
-            if (ctx && video.videoWidth > 0) {
-              canvas.width = video.videoWidth;
-              canvas.height = video.videoHeight;
-              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-              const base64Frame = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
-              ws.send(JSON.stringify({ type: "frame", image: base64Frame, session_id: sid }));
-            }
-          }
-        }, 200); // 5 FPS
-      };
     };
-    
-    initCameraAndSession();
-    
-    return () => {
-      // Cleanup
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(t => t.stop());
-      }
-      if (telemetryInterval.current) clearInterval(telemetryInterval.current);
-      if (ws) ws.close();
-    };
-  }, []);
-  
+    initSession();
+  }, []);  
   // Timing metrics
   const [startTime, setStartTime] = useState<number>(0);
   const [totalLatency, setTotalLatency] = useState<number>(0);
@@ -239,28 +129,10 @@ export default function Activity3UI() {
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#87CEEB] font-sans selection:bg-blue-500/30">
       
-      {/* Hidden camera and canvas for telemetry */}
-      <video ref={videoRef} autoPlay playsInline muted className="hidden" />
-      <canvas ref={canvasRef} className="hidden" />
+      {/* Hidden camera & telemetry */}
+      <HiddenCameraProcessor sessionId={sessionId || "mock"} activityId="A3" />
       
-      {/* Background Layer: Ocean and Clouds */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-gradient-to-b from-[#4facfe] to-[#00f2fe]">
-        <div className="absolute top-10 left-10 opacity-70 animate-pulse"><FaCloud className="text-white text-[150px]" /></div>
-        <div className="absolute top-20 right-1/4 opacity-50"><FaCloud className="text-white text-[200px]" /></div>
-      </div>
-
-      {/* Middle Layer: Pirate Ship and Island */}
-      <div className="absolute bottom-[20%] w-full h-1/2 z-10 pointer-events-none">
-        <div className="absolute bottom-[30%] right-[5%] animate-pulse" style={{animationDuration: '6s'}}><GiGalleon className="text-[#8B4513] text-[250px] drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]" /></div>
-        <div className="absolute bottom-[-10%] left-[-5%]"><GiIsland className="text-[#DEB887] text-[400px]" /></div>
-        <div className="absolute bottom-[20%] left-[10%]"><GiPalmTree className="text-[#228B22] text-[180px] drop-shadow-xl" /></div>
-        <div className="absolute bottom-[10%] left-[25%]"><GiPalmTree className="text-[#228B22] text-[120px] drop-shadow-xl" /></div>
-      </div>
-
-      {/* Foreground Layer: Sandy Beach Floor */}
-      <div className="absolute bottom-0 w-full h-[30vh] z-20 pointer-events-none bg-[#F4A460] rounded-t-[100px] border-t-8 border-[#CD853F]">
-      </div>
-
+      <BackgroundScene />
       {/* Exit Button */}
       <div className="absolute top-6 left-6 z-50">
         <button 

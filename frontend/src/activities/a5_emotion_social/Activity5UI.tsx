@@ -1,89 +1,14 @@
 "use client";
+import BackgroundScene from "./components/BackgroundScene";
+
+import HiddenCameraProcessor from "@/activities/a1_natural_interaction/components/HiddenCameraProcessor";
+
+import { TASKS } from "./components/data";
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { X, ChevronRight, RotateCcw, ArrowRight } from "lucide-react";
 
-const TASKS = [
-  {
-    level: 1,
-    id: "obvious_emotions",
-    character: "maya",
-    scene_text: "Maya received a big birthday present!",
-    question: "How do you think Maya feels?",
-    options: [
-      { id: "happy", label: "Happy", emoji: "😊" },
-      { id: "sad", label: "Sad", emoji: "😢" },
-      { id: "angry", label: "Angry", emoji: "😠" },
-      { id: "scared", label: "Scared", emoji: "😨" }
-    ],
-    correct: "happy",
-    emotion_change: "happy",
-    feedback: "That's right! You noticed how Maya might feel! 💛",
-    scene_objects: ["present", "balloon"]
-  },
-  {
-    level: 2,
-    id: "emotion_from_situation",
-    character: "aarav",
-    scene_text: "Aarav's favorite toy just broke while he was playing.",
-    question: "How might Aarav feel?",
-    options: [
-      { id: "happy", label: "Happy", emoji: "😊" },
-      { id: "sad", label: "Sad", emoji: "😢" },
-      { id: "sleepy", label: "Sleepy", emoji: "😴" },
-      { id: "excited", label: "Excited", emoji: "😎" }
-    ],
-    correct: "sad",
-    emotion_change: "sad",
-    feedback: "Yes... when things break, we often feel sad. 💛",
-    scene_objects: ["kite"]
-  },
-  {
-    level: 3,
-    id: "social_situation",
-    character: "riya",
-    scene_text: "Riya is standing alone while the other children are playing together.",
-    question: "How might Riya feel?",
-    options: [
-      { id: "happy", label: "Happy", emoji: "😊" },
-      { id: "lonely", label: "Lonely / Sad", emoji: "😢" },
-      { id: "angry", label: "Angry", emoji: "😠" },
-      { id: "sleepy", label: "Sleepy", emoji: "😴" }
-    ],
-    correct: "lonely",
-    emotion_change: "sad",
-    feedback: "She might feel lonely.",
-    social_question: "What could you do?",
-    social_options: [
-      { id: "ask_play", label: "Ask Riya to play", emoji: "💛" },
-      { id: "laugh", label: "Laugh at her", emoji: "😂" },
-      { id: "walk", label: "Walk away", emoji: "🚶" },
-      { id: "leave", label: "Tell her to leave", emoji: "😠" }
-    ],
-    social_correct: "ask_play",
-    social_emotion_change: "happy",
-    social_feedback: "That's very kind! Asking her to play helps her feel included! 💛",
-    scene_objects: ["football"]
-  },
-  {
-    level: 4,
-    id: "helping_empathy",
-    character: "kabir",
-    scene_text: "Kabir dropped his crayons and looks upset.",
-    question: "What could you do?",
-    options: [
-      { id: "help", label: "Help pick them up", emoji: "💛" },
-      { id: "laugh", label: "Laugh", emoji: "😂" },
-      { id: "walk", label: "Walk away", emoji: "🚶" },
-      { id: "take", label: "Take the crayons", emoji: "😠" }
-    ],
-    correct: "help",
-    emotion_change: "happy",
-    feedback: "You are a great helper! 💛",
-    scene_objects: ["crayon"]
-  }
-];
 
 export default function Activity5UI() {
   const router = useRouter();
@@ -101,60 +26,17 @@ export default function Activity5UI() {
   const [startTime, setStartTime] = useState<number>(0);
   const [totalLatency, setTotalLatency] = useState<number>(0);
 
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const wsRef = useRef<WebSocket | null>(null);
-  const telemetryInterval = useRef<NodeJS.Timeout | null>(null);
-
+  // Session init
   useEffect(() => {
-    let ws: WebSocket;
     const initSession = async () => {
-      let sid = "mock_session_a5";
       try {
         const res = await fetch(`http://localhost:8001/api/session/start?activity_id=A5`, { method: 'POST' });
         const data = await res.json();
-        sid = data.session_id;
-        setSessionId(sid);
-      } catch (e) { console.error(e); }
-      
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (e: unknown) { console.error("Camera access denied", e); }
-      
-      ws = new WebSocket("ws://localhost:8001/api/ws/session");
-      wsRef.current = ws;
-      
-      ws.onopen = () => {
-        telemetryInterval.current = setInterval(() => {
-          if (videoRef.current && canvasRef.current && ws.readyState === WebSocket.OPEN) {
-            const video = videoRef.current;
-            const canvas = canvasRef.current;
-            const ctx = canvas.getContext('2d');
-            if (ctx && video.videoWidth > 0) {
-              canvas.width = video.videoWidth;
-              canvas.height = video.videoHeight;
-              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-              const base64Frame = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
-              ws.send(JSON.stringify({ type: "frame", image: base64Frame, session_id: sid }));
-            }
-          }
-        }, 200);
-      };
+        setSessionId(data.session_id);
+      } catch(e) { console.error(e); }
     };
     initSession();
-    return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(t => t.stop());
-      }
-      if (telemetryInterval.current) clearInterval(telemetryInterval.current);
-      if (ws) ws.close();
-    };
   }, []);
-
   const startGame = () => {
     setSessionState("playing");
     setTaskIndex(0);
@@ -242,49 +124,10 @@ export default function Activity5UI() {
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-sky-300 font-sans">
       
-      {/* Hidden camera & canvas */}
-      <video ref={videoRef} autoPlay playsInline muted className="hidden" />
-      <canvas ref={canvasRef} className="hidden" />
+      {/* Hidden camera & telemetry */}
+      <HiddenCameraProcessor sessionId={sessionId || "mock"} activityId="A5" />
       
-      {/* 1. Sky & Distant Background */}
-      <div className="absolute inset-0 z-0 bg-gradient-to-b from-sky-300 via-sky-200 to-green-300">
-        <div className="absolute top-10 right-20 animate-[spin_60s_linear_infinite]">
-          <img src="/assets/storyworld/sun.png" alt="Sun" className="w-48 h-48 drop-shadow-xl" />
-        </div>
-        
-        {/* Clouds */}
-        <div className="absolute top-16 left-10 animate-[bounce_8s_ease-in-out_infinite]">
-          <img src="/assets/storyworld/cloud.png" alt="Cloud" className="w-64 h-64 opacity-80" />
-        </div>
-        <div className="absolute top-8 right-1/3 animate-[bounce_10s_ease-in-out_infinite_reverse]">
-          <img src="/assets/storyworld/cloud.png" alt="Cloud" className="w-48 h-48 opacity-70" />
-        </div>
-        
-        {/* Rainbow */}
-        <div className="absolute top-20 left-1/2 -translate-x-1/2">
-          <img src="/assets/storyworld/rainbow.png" alt="Rainbow" className="w-[800px] opacity-40 mix-blend-multiply" />
-        </div>
-      </div>
-
-      {/* 2. Midground Landscape */}
-      <div className="absolute bottom-0 w-full h-1/2 z-10 pointer-events-none">
-        <svg className="absolute bottom-0 w-full h-full drop-shadow-2xl" preserveAspectRatio="none" viewBox="0 0 1440 320" xmlns="http://www.w3.org/2000/svg">
-          <path fill="#86efac" fillOpacity="1" d="M0,192L60,186.7C120,181,240,171,360,176C480,181,600,203,720,208C840,213,960,203,1080,181.3C1200,160,1320,128,1380,112L1440,96L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z"></path>
-          <path fill="#4ade80" fillOpacity="1" d="M0,288L48,272C96,256,192,224,288,218.7C384,213,480,235,576,218.7C672,203,768,149,864,138.7C960,128,1056,160,1152,160C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-        </svg>
-        
-        <img src="/assets/storyworld/house.png" alt="House" className="absolute bottom-[40%] right-[10%] w-64 h-64 drop-shadow-xl" />
-        <img src="/assets/storyworld/tree1.png" alt="Tree" className="absolute bottom-[35%] left-[5%] w-80 h-80 drop-shadow-2xl" />
-        <img src="/assets/storyworld/tree2.png" alt="Tree" className="absolute bottom-[45%] left-[25%] w-64 h-64 opacity-90 drop-shadow-xl" />
-      </div>
-
-      {/* 3. Foreground Decorations */}
-      <div className="absolute bottom-0 w-full h-1/4 z-20 pointer-events-none">
-        <img src="/assets/storyworld/flower.png" alt="Flower" className="absolute bottom-10 right-[25%] w-24 h-24 drop-shadow-md animate-[bounce_4s_ease-in-out_infinite]" />
-        <img src="/assets/storyworld/flower.png" alt="Flower" className="absolute bottom-5 left-[15%] w-20 h-20 drop-shadow-md animate-[bounce_5s_ease-in-out_infinite]" />
-        <img src="/assets/storyworld/butterfly.png" alt="Butterfly" className="absolute bottom-32 left-[30%] w-16 h-16 animate-[bounce_2s_linear_infinite]" />
-      </div>
-
+      <BackgroundScene />
       {/* Exit Button */}
       <button onClick={finishActivity} className="absolute top-6 left-6 z-50 bg-white/50 hover:bg-white/90 text-sky-900 rounded-full p-4 backdrop-blur-md transition-all shadow-md">
         <X className="w-8 h-8" />

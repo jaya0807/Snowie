@@ -1,5 +1,12 @@
-import { GiButterfly, GiMoon, GiFairyWand, GiStarsStack, GiCrystalCluster } from "react-icons/gi";
-import { Star } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { X } from "lucide-react";
+import { 
+  GiFairy, GiCastle, GiStarsStack, GiMoon, GiPineTree, 
+  GiRocketFlight, GiAirBalloon, GiRingedPlanet, GiCrystalCluster, 
+  GiFairyWand, GiButterfly, GiSpikyField, GiFlowerPot
+} from "react-icons/gi";
+import { FaCloud } from "react-icons/fa";
 
 // Speak utility using Web Speech API
 const speak = (text: string) => {
@@ -11,6 +18,7 @@ const speak = (text: string) => {
     window.speechSynthesis.speak(utterance);
   }
 };
+
 
 const TASKS = [
   {
@@ -50,4 +58,4 @@ const TASKS = [
 ];
 
 
-export { TASKS, speak };
+export { speak, TASKS };
