@@ -1,53 +1,14 @@
 "use client";
+import MovieStage from "./components/MovieStage";
+import BackgroundScene from "./components/BackgroundScene";
+
+import HiddenCameraProcessor from "@/activities/a1_natural_interaction/components/HiddenCameraProcessor";
+
+import { LEVELS } from "./components/data";
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { X, ArrowRight, RefreshCcw, Clapperboard, Video, Mic2 } from "lucide-react";
-
-const LEVELS = [
-  {
-    id: "level1",
-    sentence: "Emma puts the ball beside the chair.",
-    question: "Where did Emma put the ball?",
-    sceneProps: ["chair"],
-    targetProp: "ball",
-    targetPropEndPos: "right-[20%]",
-    choices: [
-      { text: "Beside the chair", isCorrect: true, icon: "🪑" },
-      { text: "Near the bed", isCorrect: false, icon: "🛏️" },
-      { text: "Under the tree", isCorrect: false, icon: "🌳" }
-    ],
-    feedbackPos: "Great listening, Movie Star! ⭐"
-  },
-  {
-    id: "level2",
-    sentence: "Emma puts the toy on the bed.",
-    question: "What did Emma put on the bed?",
-    sceneProps: ["bed"],
-    targetProp: "toy",
-    targetPropEndPos: "right-[40%] top-[40%]",
-    choices: [
-      { text: "The toy", isCorrect: true, icon: "🧸" },
-      { text: "The ball", isCorrect: false, icon: "⚽" },
-      { text: "The flower", isCorrect: false, icon: "🌸" }
-    ],
-    feedbackPos: "Amazing memory! 🎬"
-  },
-  {
-    id: "level3",
-    sentence: "Emma puts the beautiful flower near the house.",
-    question: "Where was the flower?",
-    sceneProps: ["house"],
-    targetProp: "flower",
-    targetPropEndPos: "right-[30%] top-[60%]",
-    choices: [
-      { text: "Near the house", isCorrect: true, icon: "🏠" },
-      { text: "Next to the tree", isCorrect: false, icon: "🌳" },
-      { text: "On the chair", isCorrect: false, icon: "🪑" }
-    ],
-    feedbackPos: "You're a true director! 🌟"
-  }
-];
 
 export default function Activity4UI() {
   const router = useRouter();
@@ -66,64 +27,19 @@ export default function Activity4UI() {
   // Animation states
   const [emmaPos, setEmmaPos] = useState("-left-64");
   const [propPos, setPropPos] = useState("opacity-0");
-
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const wsRef = useRef<WebSocket | null>(null);
-  const telemetryInterval = useRef<NodeJS.Timeout | null>(null);
   const fallbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Session init
   useEffect(() => {
-    let ws: WebSocket;
     const initSession = async () => {
-      let sid = "mock_session_a4";
       try {
         const res = await fetch(`http://localhost:8001/api/session/start?activity_id=A4`, { method: 'POST' });
         const data = await res.json();
-        sid = data.session_id;
-        setSessionId(sid);
-      } catch (e) { console.error(e); }
-      
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (e: unknown) { console.error("Camera access denied", e); }
-      
-      ws = new WebSocket("ws://localhost:8001/api/ws/session");
-      wsRef.current = ws;
-      
-      ws.onopen = () => {
-        telemetryInterval.current = setInterval(() => {
-          if (videoRef.current && canvasRef.current && ws.readyState === WebSocket.OPEN) {
-            const video = videoRef.current;
-            const canvas = canvasRef.current;
-            const ctx = canvas.getContext('2d');
-            if (ctx && video.videoWidth > 0) {
-              canvas.width = video.videoWidth;
-              canvas.height = video.videoHeight;
-              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-              const base64Frame = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
-              ws.send(JSON.stringify({ type: "frame", image: base64Frame, session_id: sid }));
-            }
-          }
-        }, 200);
-      };
+        setSessionId(data.session_id);
+      } catch(e) { console.error(e); }
     };
     initSession();
-    return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(t => t.stop());
-      }
-      if (telemetryInterval.current) clearInterval(telemetryInterval.current);
-      if (ws) ws.close();
-      window.speechSynthesis.cancel();
-      if (fallbackTimeoutRef.current) clearTimeout(fallbackTimeoutRef.current);
-    };
   }, []);
-
   const speakSentence = (text: string, onComplete: () => void) => {
     window.speechSynthesis.cancel();
     if (fallbackTimeoutRef.current) clearTimeout(fallbackTimeoutRef.current);
@@ -242,22 +158,10 @@ export default function Activity4UI() {
   return (
     <div className="relative w-screen h-screen overflow-hidden font-sans bg-slate-900 text-white">
       
-      {/* Hidden camera & canvas */}
-      <video ref={videoRef} autoPlay playsInline muted className="hidden" />
-      <canvas ref={canvasRef} className="hidden" />
+      {/* Hidden camera & telemetry */}
+      <HiddenCameraProcessor sessionId={sessionId || "mock"} activityId="A4" />
       
-      {/* Studio Background Elements */}
-      <div className="absolute inset-0 pointer-events-none opacity-30 flex items-start justify-around pt-10">
-         <div className="w-1 bg-zinc-700 h-64 relative shadow-2xl">
-           <div className="absolute bottom-0 -left-6 w-12 h-8 bg-zinc-800 rounded-t-xl"></div>
-           <div className="absolute bottom-4 -left-12 w-24 h-24 bg-yellow-100 rounded-full blur-[50px] opacity-80 animate-pulse"></div>
-         </div>
-         <div className="w-1 bg-zinc-700 h-48 relative shadow-2xl">
-           <div className="absolute bottom-0 -left-6 w-12 h-8 bg-zinc-800 rounded-t-xl"></div>
-           <div className="absolute bottom-4 -left-12 w-24 h-24 bg-yellow-100 rounded-full blur-[50px] opacity-80 animate-pulse" style={{animationDelay: '1s'}}></div>
-         </div>
-      </div>
-
+      <BackgroundScene />
       {/* Exit Button */}
       <button onClick={finishActivity} className="absolute top-6 left-6 z-50 bg-white/10 hover:bg-white/20 text-white rounded-full p-4 backdrop-blur-md transition-all shadow-md border border-white/10">
         <X className="w-8 h-8" />
@@ -287,48 +191,7 @@ export default function Activity4UI() {
         {(sessionState === "movie" || sessionState === "question" || sessionState === "celebrating") && (
           <div className="w-full max-w-6xl h-full flex flex-col items-center justify-center pt-20">
             
-            {/* The Movie Stage */}
-            <div className={`relative w-full h-[500px] bg-sky-200 rounded-[3rem] overflow-hidden border-[12px] border-zinc-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] mb-8 transition-all duration-1000 ${sessionState === 'question' ? 'brightness-50 grayscale-[50%]' : ''}`}>
-               
-               {/* Film overlay decoration */}
-               <div className="absolute top-0 left-0 w-full h-8 bg-zinc-900 flex justify-between px-8 items-center opacity-50 z-50">
-                 {[...Array(20)].map((_, i) => <div key={i} className="w-4 h-4 bg-zinc-300 rounded-sm"></div>)}
-               </div>
-               <div className="absolute bottom-0 left-0 w-full h-8 bg-zinc-900 flex justify-between px-8 items-center opacity-50 z-50">
-                 {[...Array(20)].map((_, i) => <div key={i} className="w-4 h-4 bg-zinc-300 rounded-sm"></div>)}
-               </div>
-               
-               {/* Ground */}
-               <div className="absolute bottom-0 w-full h-1/3 bg-emerald-400 rounded-b-[2rem]"></div>
-
-               {/* Static Scene Props */}
-               {currentLevel.sceneProps.map(prop => (
-                 <img key={prop} src={`/assets/movie/${prop}.png`} alt={prop} className="absolute right-[20%] bottom-[20%] w-64 h-64 object-contain drop-shadow-xl" />
-               ))}
-
-               {/* Target Prop (Animated) */}
-               <img 
-                 src={`/assets/movie/${currentLevel.targetProp}.png`} 
-                 alt="Target" 
-                 className={`absolute w-32 h-32 object-contain drop-shadow-xl z-30 ${propPos}`} 
-               />
-
-               {/* Character (Emma) */}
-               <img 
-                 src="/assets/movie/emma.svg" 
-                 alt="Emma" 
-                 className={`absolute bottom-[20%] w-64 h-64 object-contain drop-shadow-2xl z-40 transition-all duration-[2000ms] ease-in-out ${emmaPos}`}
-               />
-
-               {sessionState === "question" && (
-                 <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
-                    <div className="bg-black/80 text-white font-black text-6xl px-12 py-6 rounded-3xl backdrop-blur-sm border-4 border-white/20 animate-pulse">
-                      PAUSED
-                    </div>
-                 </div>
-               )}
-            </div>
-
+            <MovieStage sessionState={sessionState} currentLevel={currentLevel} emmaPos={emmaPos} propPos={propPos} />
             {/* Question Panel */}
             {sessionState === "question" && (
               <div className="w-full bg-zinc-800 p-8 rounded-[2rem] border border-zinc-700 shadow-2xl animate-[slideUp_0.5s_ease-out]">

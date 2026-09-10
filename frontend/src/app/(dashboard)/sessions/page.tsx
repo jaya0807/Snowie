@@ -58,7 +58,7 @@ export default function LiveSession() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Parent Monitor</h1>
-          <p className="text-sm text-zinc-500">Watching Child Mode Activity: {activityId}</p>
+          <p className="text-sm text-zinc-500">Watching Activity: {activityId}</p>
         </div>
         <div className="flex gap-3 items-center">
           {sessionActive ? (

@@ -82,7 +82,7 @@ return (
             <h2 className="text-sm font-bold text-zinc-900 mb-2">Engine Status</h2>
             <p className="text-xs text-zinc-500 mb-4">The GROW engine converts professional goals and observed performance into structured developmental practice. It does not automatically prescribe medical treatment.</p>
             <button className="w-full btn-primary px-4 py-2 text-sm font-medium">
-              Approve & Start in Child Mode
+              Approve Approve & Start in Child Mode Launch
             </button>
             <button className="w-full btn-secondary mt-2 px-4 py-2 text-sm font-medium">
               Start in Parent Mode            </button>

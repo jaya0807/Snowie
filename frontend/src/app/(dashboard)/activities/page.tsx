@@ -17,7 +17,7 @@ export default function ActivitiesPage() {
       .catch(err => console.error(err));
   }, []);
 
-  const handleStartChildMode = (activityId: string) => {
+  const launchActivity = (activityId: string) => {
     router.push(`/child?activity=${activityId}`);
   };
 
@@ -26,7 +26,7 @@ export default function ActivitiesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Activity Library</h1>
-          <p className="text-sm text-zinc-500 mt-1">Select an activity to launch in Child Mode.</p>
+          <p className="text-sm text-zinc-500 mt-1">Select an activity to launch.</p>
         </div>
       </div>
 
@@ -65,7 +65,7 @@ export default function ActivitiesPage() {
                 </div>
 
                 <div className="mt-6 flex gap-3">
-                  <button onClick={() => handleStartChildMode(act.id)} className="flex-1 btn-primary py-2 text-sm font-semibold group-hover:bg-brand-dark transition-colors">
+                  <button onClick={() => launchActivity(act.id)} className="flex-1 btn-primary py-2 text-sm font-semibold group-hover:bg-brand-dark transition-colors">
                     Launch Activity
                   </button>
                 </div>

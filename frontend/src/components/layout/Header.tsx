@@ -17,10 +17,7 @@ export function Header() {
         </div>
       </div>
 
-      <div className="flex items-center gap-5">
-        <button onClick={() => router.push("/child")} className="mr-2 text-xs font-bold uppercase tracking-wider bg-brand text-white px-4 py-2 rounded-md hover:bg-brand-dark transition-colors shadow-sm">
-          Enter Child Mode
-        </button>        
+      <div className="flex items-center gap-5">        
         <button className="relative text-zinc-900 hover:text-brand transition-colors">
           <Bell className="w-4 h-4" />
         </button>
