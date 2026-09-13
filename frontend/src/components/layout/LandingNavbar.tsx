@@ -35,9 +35,6 @@ export function LandingNavbar() {
         <Link href="#how-it-works" className="hover:text-brand-accent transition-colors">
           How It Works
         </Link>
-        <Link href="#professionals" className="hover:text-brand-accent transition-colors">
-          For Professionals
-        </Link>
         <Link href="#contact" className="hover:text-brand-accent transition-colors">
           Contact
         </Link>

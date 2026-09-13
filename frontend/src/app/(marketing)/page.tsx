@@ -25,7 +25,7 @@ export default function LandingPage() {
           
           <div className="flex flex-col sm:flex-row gap-4 pt-4">
             <Link 
-              href="/child?activity=A1" 
+              href="/signup" 
               className="flex items-center justify-center gap-2 bg-[#176B9C] hover:bg-[#135A84] text-white px-8 py-3.5 rounded-lg font-medium transition-all shadow-sm"
             >
               <Rocket className="w-5 h-5" />
@@ -33,7 +33,7 @@ export default function LandingPage() {
             </Link>
             
             <Link 
-              href="/dashboard" 
+              href="#" 
               className="flex items-center justify-center gap-2 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 px-8 py-3.5 rounded-lg font-medium transition-all shadow-sm"
             >
               <Users className="w-5 h-5 text-[#176B9C]" />

@@ -39,7 +39,7 @@ export default function LoginPage() {
       });
 
       if (res.success) {
-        router.push("/parent-dashboard");
+        router.push("/dashboard");
       } else {
         setErrorMessage(
           res.error || "Oops! We couldn’t log you in. Please check your details and try again."
