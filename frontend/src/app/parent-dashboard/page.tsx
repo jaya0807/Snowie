@@ -60,7 +60,7 @@ export default function ParentDashboardPage() {
               </div>
               <div>
                 <span className="font-extrabold text-sm text-zinc-900 block leading-tight">
-                  AI Child Observe
+                  Snowie
                 </span>
                 <span className="text-[10px] font-bold text-brand uppercase tracking-wider block">
                   Parent Portal

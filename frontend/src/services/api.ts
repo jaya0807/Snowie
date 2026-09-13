@@ -1,5 +1,5 @@
 /**
- * Centralized API Client for AI Child Observe
+ * Centralized API Client for Snowie
  * Connects frontend to the FastAPI Python backend
  */
 

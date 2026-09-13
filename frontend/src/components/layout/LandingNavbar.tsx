@@ -18,9 +18,7 @@ export function LandingNavbar() {
         </div>
         <div>
           <h1 className="text-xl font-bold leading-tight text-zinc-900">
-            AI Child
-            <br />
-            <span className="text-brand-accent">Observe</span>
+            Snowie
           </h1>
         </div>
       </div>

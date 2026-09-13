@@ -91,10 +91,7 @@ export default function LoginPage() {
           </div>
           <div>
             <span className="font-extrabold text-sm text-zinc-900 tracking-tight block leading-tight">
-              AI Child
-            </span>
-            <span className="font-bold text-xs text-brand-accent tracking-wider block">
-              OBSERVE
+              Snowie
             </span>
           </div>
         </Link>
@@ -262,7 +259,7 @@ export default function LoginPage() {
       {/* Footer */}
       <footer className="w-full max-w-7xl mx-auto px-6 py-6 text-center text-xs text-zinc-500 relative z-20">
         <p className="flex items-center justify-center gap-1">
-          <span>AI Child Observe • Supporting every child’s unique journey</span>
+          <span>Snowie • Supporting every child’s unique journey</span>
           <Heart className="w-3 h-3 text-rose-400 fill-rose-400 inline" />
         </p>
       </footer>

@@ -46,7 +46,7 @@ export default function LandingPage() {
         <div className="flex-1 relative mt-16 md:mt-0 z-10 w-full h-[500px]">
           <Image 
             src="/hero_illustration.png" 
-            alt="AI Child Observation" 
+            alt="Snowie" 
             fill
             className="object-contain drop-shadow-xl"
             priority

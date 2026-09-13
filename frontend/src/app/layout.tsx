@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Child Observation Platform",
+  title: "Snowie Platform",
   description: "AI-assisted structured observations",
 };
 
