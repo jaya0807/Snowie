@@ -245,7 +245,12 @@ export function SignupForm({ onBack }: SignupFormProps) {
                         <input
                           type="tel"
                           value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (/^[\d+\-()\s]*$/.test(val)) {
+                              setPhone(val);
+                            }
+                          }}
                           placeholder="+1 (555) 000-0000"
                           className="w-full pl-10 pr-4 py-3.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder:text-zinc-400 focus:bg-white focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all outline-none"
                         />
