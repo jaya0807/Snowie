@@ -96,7 +96,7 @@ export default function Activity3UI() {
     }
   };
 
-  const finishActivity = async () => {
+  const finishActivity = async (quit: boolean = false) => {
     // Send final metrics to backend
     const accuracy = totalAttempts > 0 ? ((totalAttempts - errors) / totalAttempts) * 100 : 0;
     const avg_latency = TASKS.length > 0 ? totalLatency / TASKS.length : 0;
@@ -122,8 +122,11 @@ export default function Activity3UI() {
       console.error("Failed to submit metrics", e);
     }
     
-    // Go back to dashboard
-    router.push("/dashboard");
+    if (quit === true) {
+      router.push("/dashboard");
+    } else {
+      router.push("/child?activity=A4");
+    }
   };
 
   return (
@@ -136,7 +139,7 @@ export default function Activity3UI() {
       {/* Exit Button */}
       <div className="absolute top-6 left-6 z-50">
         <button 
-          onClick={finishActivity}
+          onClick={() => finishActivity(true)}
           className="bg-white/30 hover:bg-white/60 text-white rounded-full p-4 backdrop-blur-md transition-all shadow-lg border border-white/40"
         >
           <X className="w-8 h-8" />
@@ -193,7 +196,7 @@ export default function Activity3UI() {
 
           {sessionState === "outro" && (
             <button 
-              onClick={finishActivity}
+              onClick={() => finishActivity(false)}
               className="bg-gradient-to-b from-[#32CD32] to-[#228B22] hover:from-[#3CB371] hover:to-[#006400] text-white font-black text-3xl px-16 py-8 rounded-xl shadow-[0_10px_0_#006400,0_20px_40px_rgba(34,139,34,0.6)] transition-all duration-300 transform hover:-translate-y-2 active:translate-y-2 active:shadow-[0_0px_0_#006400] flex items-center gap-4 border-4 border-[#98FB98]"
             >
               <GiTreasureMap className="text-4xl" />

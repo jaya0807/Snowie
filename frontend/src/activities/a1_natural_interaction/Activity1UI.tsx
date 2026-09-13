@@ -15,10 +15,10 @@ import { useRouter } from "next/navigation";
 const STEPS = [
   { id: "intro", charImage: "fox.png", name: "Foxie", message: "Hi! I'm Foxie!\nI can't wait to meet you!\nLet's get to know each other. 💛", action: "✨ Let's Talk!" },
   { id: "name", charImage: "bunny.png", name: "Bunny", message: "And I'm Bunny! What's your name? 😊", action: "✨ That's me!" },
-  { id: "feeling", charImage: "bear.png", name: "Bear", message: "How are you feeling today?", action: "Continue" },
+  { id: "feeling", charImage: "bear.png", name: "Bear", message: "Hi {name}! 👋\nHow are you feeling today?", action: "Continue" },
   { id: "animal", charImage: "panda.png", name: "Panda", message: "What's your favourite animal?", action: "Continue" },
   { id: "day", charImage: "puppy.png", name: "Puppy", message: "Tell me about your day. I'm listening!\n(There's no right or wrong answer. 💛)", action: "✨ Done!" },
-  { id: "outro", charImage: "lion.png", name: "Lion", message: "You've met everyone!\nReady for your adventure?", action: "🚀 Let's Go!" }
+  { id: "outro", charImage: "lion.png", name: "Lion", message: "You've met everyone, {name}!\nReady for your adventure?", action: "🚀 Let's Go!" }
 ];
 
 export default function Activity1UI() {
@@ -55,7 +55,7 @@ export default function Activity1UI() {
       } catch (e) {
         console.error("Failed to submit A1 data", e);
       }
-      router.push('/dashboard');
+      router.push('/child?activity=A2');
     }
   };
 
@@ -111,7 +111,10 @@ export default function Activity1UI() {
 
         <DialogueBubble name={step.name} charImage={step.charImage}>
           <h2 className="text-xl md:text-2xl font-extrabold text-[#176B9C] leading-relaxed">
-            {step.message.split('\n').map((line, i) => <p key={i}>{line}</p>)}
+            {step.message
+              .replace('{name}', name || "friend")
+              .split('\n')
+              .map((line, i) => <p key={i}>{line}</p>)}
           </h2>
         </DialogueBubble>
 
@@ -142,7 +145,7 @@ export default function Activity1UI() {
                   <Mic className="w-5 h-5" />
                   <span className="font-bold">{isListening ? 'Listening...' : '🎤 Tell me!'}</span>
                 </button>
-                <ContinueButton onClick={() => setFeedbackState('name')} label={step.action} />
+                <ContinueButton onClick={() => setFeedbackState('name')} label={step.action} disabled={!name.trim()} />
               </div>
             </div>
           )}
@@ -201,7 +204,7 @@ export default function Activity1UI() {
                   <Mic className="w-6 h-6" />
                   <span className="font-bold text-lg">{isListening ? 'Listening...' : '🎤 Talk to Puppy'}</span>
                 </button>
-                <ContinueButton onClick={() => setFeedbackState('day')} label={step.action} />
+                <ContinueButton onClick={() => setFeedbackState('day')} label={step.action} disabled={!dayText.trim()} />
               </div>
             </div>
           )}

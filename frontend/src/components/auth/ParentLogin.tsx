@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, ShieldCheck, HelpCircle } from "lucide-react";
 import { LoginCard } from "./LoginCard";
 import { Button } from "@/components/common/Button";
@@ -193,19 +194,12 @@ export function ParentLogin({ onBack }: ParentLoginProps) {
           </button>
 
           <div>
-            <button
-              type="button"
-              onClick={() =>
-                setModalInfo({
-                  title: "Create Parent Account",
-                  content:
-                    "Registration is managed through your institution or pediatric clinic. For demo purposes, you can immediately log in with any email!",
-                })
-              }
+            <Link
+              href="/signup"
               className="text-xs font-semibold text-brand hover:underline cursor-pointer"
             >
               Create Parent Account
-            </button>
+            </Link>
           </div>
         </div>
       </LoginCard>

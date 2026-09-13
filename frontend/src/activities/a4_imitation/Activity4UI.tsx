@@ -131,7 +131,7 @@ export default function Activity4UI() {
     }
   };
 
-  const finishActivity = async () => {
+  const finishActivity = async (quit: boolean = false) => {
     const accuracy = attempts > 0 ? ((attempts - errors) / attempts) * 100 : 0;
     const avg_latency = LEVELS.length > 0 ? totalLatency / LEVELS.length : 0;
     
@@ -150,7 +150,11 @@ export default function Activity4UI() {
     } catch (e) {
       console.error("Failed to submit metrics", e);
     }
-    router.push("/dashboard");
+    if (quit === true) {
+      router.push("/dashboard");
+    } else {
+      router.push("/child?activity=A5");
+    }
   };
 
   const currentLevel = LEVELS[levelIndex];
@@ -163,7 +167,7 @@ export default function Activity4UI() {
       
       <BackgroundScene />
       {/* Exit Button */}
-      <button onClick={finishActivity} className="absolute top-6 left-6 z-50 bg-white/10 hover:bg-white/20 text-white rounded-full p-4 backdrop-blur-md transition-all shadow-md border border-white/10">
+      <button onClick={() => finishActivity(true)} className="absolute top-6 left-6 z-50 bg-white/10 hover:bg-white/20 text-white rounded-full p-4 backdrop-blur-md transition-all shadow-md border border-white/10">
         <X className="w-8 h-8" />
       </button>
 
@@ -249,7 +253,7 @@ export default function Activity4UI() {
                <h1 className="text-6xl font-black text-white mb-6 drop-shadow-sm">MOVIE STAR!</h1>
                <p className="text-3xl text-zinc-300 font-bold mb-12">You listened and remembered so well! 🎬</p>
                
-               <button onClick={finishActivity} className="bg-yellow-500 hover:bg-yellow-400 text-yellow-900 font-black text-3xl px-12 py-6 rounded-full shadow-[0_8px_0_#a16207,0_15px_30px_rgba(234,179,8,0.4)] transition-all hover:-translate-y-2 active:translate-y-2 active:shadow-[0_0px_0_#a16207] flex items-center gap-4">
+               <button onClick={() => finishActivity(false)} className="bg-yellow-500 hover:bg-yellow-400 text-yellow-900 font-black text-3xl px-12 py-6 rounded-full shadow-[0_8px_0_#a16207,0_15px_30px_rgba(234,179,8,0.4)] transition-all hover:-translate-y-2 active:translate-y-2 active:shadow-[0_0px_0_#a16207] flex items-center gap-4">
                  <Clapperboard className="w-8 h-8" /> That&apos;s a Wrap!
                </button>
              </div>

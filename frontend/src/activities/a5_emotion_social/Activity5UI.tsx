@@ -97,7 +97,7 @@ export default function Activity5UI() {
     }
   };
 
-  const finishActivity = async () => {
+  const finishActivity = async (quit: boolean = false) => {
     const accuracy = attempts > 0 ? ((attempts - errors) / attempts) * 100 : 0;
     const avg_latency = TASKS.length > 0 ? totalLatency / TASKS.length : 0;
     
@@ -116,7 +116,11 @@ export default function Activity5UI() {
     } catch (e) {
       console.error("Failed to submit metrics", e);
     }
-    router.push("/dashboard");
+    if (quit === true) {
+      router.push("/dashboard");
+    } else {
+      router.push("/child?activity=A6");
+    }
   };
 
   const currentTask = TASKS[taskIndex];
@@ -129,7 +133,7 @@ export default function Activity5UI() {
       
       <BackgroundScene />
       {/* Exit Button */}
-      <button onClick={finishActivity} className="absolute top-6 left-6 z-50 bg-white/50 hover:bg-white/90 text-sky-900 rounded-full p-4 backdrop-blur-md transition-all shadow-md">
+      <button onClick={() => finishActivity(true)} className="absolute top-6 left-6 z-50 bg-white/50 hover:bg-white/90 text-sky-900 rounded-full p-4 backdrop-blur-md transition-all shadow-md">
         <X className="w-8 h-8" />
       </button>
 
@@ -220,7 +224,7 @@ export default function Activity5UI() {
              <img src="/assets/storyworld/sparkles.png" alt="Sparkles" className="w-32 h-32 mb-6 animate-spin" style={{animationDuration: '10s'}} />
              <h1 className="text-5xl font-black text-green-600 mb-6 font-comic">🌈 You did amazing!</h1>
              <p className="text-2xl text-zinc-600 font-bold mb-10">You discovered lots of feelings and friendly ways to help!</p>
-             <button onClick={finishActivity} className="bg-green-500 hover:bg-green-400 text-white font-black text-3xl px-12 py-6 rounded-full shadow-[0_8px_0_#166534,0_15px_30px_rgba(34,197,94,0.4)] transition-all hover:-translate-y-2 active:translate-y-2 active:shadow-[0_0px_0_#166534] flex items-center gap-4">
+             <button onClick={() => finishActivity(false)} className="bg-green-500 hover:bg-green-400 text-white font-black text-3xl px-12 py-6 rounded-full shadow-[0_8px_0_#166534,0_15px_30px_rgba(34,197,94,0.4)] transition-all hover:-translate-y-2 active:translate-y-2 active:shadow-[0_0px_0_#166534] flex items-center gap-4">
                ✨ Finish Adventure
              </button>
            </div>

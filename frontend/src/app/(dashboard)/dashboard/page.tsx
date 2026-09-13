@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { Activity, Brain, Clock, Target, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { 
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer
 } from "recharts";
 
 export default function DashboardHome() {
   const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
   
   const [data, setData] = useState({
     stats: { 
@@ -25,6 +25,7 @@ export default function DashboardHome() {
   });
 
   useEffect(() => {
+    setIsMounted(true);
     fetch("http://localhost:8001/api/dashboard")
       .then(res => res.json())
       .then(json => {
@@ -32,7 +33,31 @@ export default function DashboardHome() {
           setData(json);
         }
       })
-      .catch(err => console.error("Failed to fetch dashboard data:", err));
+      .catch(err => {
+        // Backend not running, populate with dummy data for demonstration
+        setData({
+          stats: {
+            totalSessions: { value: "12", trend: "+2 this week", isPositive: true, label: "Total Sessions" },
+            avgEngagement: { value: "85%", trend: "+5%", isPositive: true, label: "Avg Focus Time" },
+            avgDuration: { value: "15m", trend: "Steady", isPositive: true, label: "Session Duration" },
+            goalAchievement: { value: "40%", trend: "+10%", isPositive: true, label: "Goal Progress" }
+          },
+          recentSessions: [
+            { id: "s1", activity: "A1: Natural Interaction", time: "Today, 10:30 AM", status: "Completed", duration: "12m", accuracy: "90%" },
+            { id: "s2", activity: "A2: Follow Instruction", time: "Yesterday, 2:15 PM", status: "Completed", duration: "15m", accuracy: "85%" },
+            { id: "s3", activity: "A3: Target Finding", time: "Mon, 9:00 AM", status: "Incomplete", duration: "5m", accuracy: "N/A" }
+          ],
+          chartData: [
+            { name: "Mon", engagement: 65 },
+            { name: "Tue", engagement: 70 },
+            { name: "Wed", engagement: 68 },
+            { name: "Thu", engagement: 80 },
+            { name: "Fri", engagement: 85 },
+            { name: "Sat", engagement: 90 },
+            { name: "Sun", engagement: 88 }
+          ]
+        });
+      });
   }, []);
 
   const statsList = [
@@ -87,23 +112,30 @@ export default function DashboardHome() {
             </div>
           </CardHeader>
           <CardContent className="flex-1 min-h-0 relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorEngagement" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#176B9C" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#176B9C" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#71717a' }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#71717a' }} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                  itemStyle={{ color: '#176B9C', fontWeight: 600 }}
-                />
-                <Area type="monotone" dataKey="engagement" stroke="#176B9C" strokeWidth={3} fillOpacity={1} fill="url(#colorEngagement)" activeDot={{ r: 6, strokeWidth: 0, fill: '#176B9C' }} />
-              </AreaChart>
-            </ResponsiveContainer>
+            {!isMounted || data.chartData.length === 0 ? (
+              <div className="w-full h-full flex flex-col items-center justify-center text-zinc-400">
+                <Activity className="w-8 h-8 mb-2 opacity-50" />
+                <p className="text-sm">No engagement data available yet</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={data.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorEngagement" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#176B9C" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#176B9C" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#71717a' }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#71717a' }} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                    itemStyle={{ color: '#176B9C', fontWeight: 600 }}
+                  />
+                  <Area type="monotone" dataKey="engagement" stroke="#176B9C" strokeWidth={3} fillOpacity={1} fill="url(#colorEngagement)" activeDot={{ r: 6, strokeWidth: 0, fill: '#176B9C' }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -112,7 +144,7 @@ export default function DashboardHome() {
             <CardTitle className="text-lg text-zinc-900">Recent Activities</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 flex flex-col gap-4 overflow-auto min-h-0 pt-0">
-            {data.recentSessions.length === 0 ? (
+            {!isMounted || data.recentSessions.length === 0 ? (
               <div className="flex-1 flex items-center justify-center text-zinc-500 text-sm">
                 No sessions yet
               </div>

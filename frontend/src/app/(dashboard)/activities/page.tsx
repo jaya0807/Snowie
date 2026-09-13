@@ -14,7 +14,16 @@ export default function ActivitiesPage() {
     fetch("http://localhost:8001/api/activities")
       .then(res => res.json())
       .then(data => setActivities(data))
-      .catch(err => console.error(err));
+      .catch(err => {
+        setActivities([
+          { id: "A1", name: "Natural Interaction", domain: "social", description: "Child converses with on-screen characters to assess baseline social response.", difficulty_levels: [1] },
+          { id: "A2", name: "Follow Instruction", domain: "cognitive", description: "Follow simple commands to tap specific objects on screen.", difficulty_levels: [1, 2, 3] },
+          { id: "A3", name: "Target Finding", domain: "cognitive", description: "Find specific visual targets on screen among distractors.", difficulty_levels: [1, 2, 3] },
+          { id: "A4", name: "Imitation", domain: "motor", description: "Imitate movements shown by characters on screen.", difficulty_levels: [1, 2, 3, 4, 5] },
+          { id: "A5", name: "Emotion Social", domain: "social", description: "Identify emotions from facial expressions.", difficulty_levels: [1, 2] },
+          { id: "A6", name: "Controlled Challenge", domain: "cognitive", description: "Advanced challenges under time constraints.", difficulty_levels: [1, 2] }
+        ]);
+      });
   }, []);
 
   const launchActivity = (activityId: string) => {

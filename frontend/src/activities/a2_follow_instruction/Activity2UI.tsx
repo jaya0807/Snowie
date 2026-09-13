@@ -36,7 +36,9 @@ export default function Activity2UI() {
         const res = await fetch(`http://localhost:8001/api/session/start?activity_id=A2`, { method: 'POST' });
         const data = await res.json();
         setSessionId(data.session_id);
-      } catch(e) { console.error(e); }
+      } catch(e) { 
+        // Backend not running, silently fallback
+      }
     };
     initSession();
   }, []);  
@@ -99,7 +101,7 @@ export default function Activity2UI() {
     }
   };
 
-  const finishActivity = async () => {
+  const finishActivity = async (quit: boolean = false) => {
     // Send final metrics to backend
     const accuracy = totalAttempts > 0 ? ((totalAttempts - errors) / totalAttempts) * 100 : 0;
     const avg_latency = TASKS.length > 0 ? totalLatency / TASKS.length : 0;
@@ -125,8 +127,11 @@ export default function Activity2UI() {
       console.error("Failed to submit metrics", e);
     }
     
-    // Go back to dashboard
-    router.push("/dashboard");
+    if (quit === true) {
+      router.push("/dashboard");
+    } else {
+      router.push("/child?activity=A3");
+    }
   };
 
   return (
@@ -139,7 +144,7 @@ export default function Activity2UI() {
       {/* Exit Button & Hidden Camera Elements */}
       <div className="absolute top-6 left-6 z-50">
         <button 
-          onClick={finishActivity}
+          onClick={() => finishActivity(true)}
           className="bg-white/10 hover:bg-white/30 text-white rounded-full p-4 backdrop-blur-md transition-all shadow-lg border border-white/20"
         >
           <X className="w-8 h-8" />
@@ -198,7 +203,7 @@ export default function Activity2UI() {
 
           {sessionState === "outro" && (
             <button 
-              onClick={finishActivity}
+              onClick={() => finishActivity(false)}
               className="bg-gradient-to-b from-[#FF7A00] to-[#E85D04] hover:from-[#FF9E00] hover:to-[#F48C06] text-white font-black text-3xl px-16 py-8 rounded-[40px] shadow-[0_10px_0_#D00000,0_20px_40px_rgba(255,122,0,0.6)] transition-all duration-300 transform hover:-translate-y-2 active:translate-y-2 active:shadow-[0_0px_0_#D00000] flex items-center gap-4 border-4 border-orange-300/50"
             >
               <GiCastle className="text-4xl" />
