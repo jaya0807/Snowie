@@ -1,5 +1,4 @@
 "use client";
-import { useSearchParams } from "next/navigation";
 import { Target, Plus, TrendingUp, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 

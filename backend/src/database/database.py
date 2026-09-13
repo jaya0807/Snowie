@@ -57,7 +57,10 @@ class Database:
             ''')
             conn.commit()
 
-    def add_participant(self, participant_id, name, age, created_at):
+    def add_participant(self, participant_id, name=None, age=None, created_at=None):
+        if hasattr(participant_id, "participant_id"):
+            p = participant_id
+            participant_id, name, age, created_at = p.participant_id, p.name, p.age, getattr(p, "created_at", None)
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('''
@@ -66,11 +69,18 @@ class Database:
             ''', (participant_id, name, age, created_at))
             conn.commit()
 
-    def start_session(self, session_id, participant_id, start_time, activity_id, difficulty):
+    def start_session(self, session_id, participant_id=None, start_time=None, activity_id=None, difficulty=None):
+        if hasattr(session_id, "session_id"):
+            s = session_id
+            session_id = s.session_id
+            participant_id = s.participant_id
+            start_time = s.start_time
+            activity_id = getattr(s, "activity_id", "A1")
+            difficulty = getattr(s, "difficulty", "Low")
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO sessions (session_id, participant_id, start_time, activity_id, difficulty)
+                INSERT OR REPLACE INTO sessions (session_id, participant_id, start_time, activity_id, difficulty)
                 VALUES (?, ?, ?, ?, ?)
             ''', (session_id, participant_id, start_time, activity_id, difficulty))
             conn.commit()

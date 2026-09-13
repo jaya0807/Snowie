@@ -1,12 +1,9 @@
 "use client";
-import { useSearchParams } from "next/navigation";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Sprout, ArrowRight, BrainCircuit, Play } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export default function GrowPage() {
-  const searchParams = useSearchParams();
-  
   const [plan, setPlan] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 

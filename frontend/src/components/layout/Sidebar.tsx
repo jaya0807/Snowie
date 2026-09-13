@@ -4,23 +4,24 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Activity, LayoutDashboard, Users, FileText, Settings, ClipboardList, Target, Sprout, TrendingUp } from "lucide-react";
 
+function NavItem({ href, icon: Icon, label }: { href: string, icon: any, label: string }) {
+  const pathname = usePathname();
+  const isActive = pathname === href || pathname?.startsWith(`${href}/`);
+  return (
+    <Link 
+      href={href} 
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+        isActive ? "bg-brand/10 text-zinc-900" : "text-zinc-500 hover:text-zinc-900 hover:bg-brand/5"
+      }`}
+    >
+      <Icon className="w-4 h-4" />
+      <span className="font-medium text-sm">{label}</span>
+    </Link>
+  );
+}
+
 export function Sidebar() {
   const pathname = usePathname();
-
-  const NavItem = ({ href, icon: Icon, label }: { href: string, icon: any, label: string }) => {
-    const isActive = pathname === href || pathname?.startsWith(`${href}/`);
-    return (
-      <Link 
-        href={href} 
-        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-          isActive ? "bg-brand/10 text-zinc-900" : "text-zinc-500 hover:text-zinc-900 hover:bg-brand/5"
-        }`}
-      >
-        <Icon className="w-4 h-4" />
-        <span className="font-medium text-sm">{label}</span>
-      </Link>
-    );
-  };
 
   return (
     <aside className="w-56 flex-shrink-0 hidden md:flex flex-col bg-white border-r border-black/5 m-3 rounded-lg z-10 shadow-[0_4px_14px_0_rgba(23,107,156,0.12),0_2px_4px_0_rgba(23,107,156,0.06)]">

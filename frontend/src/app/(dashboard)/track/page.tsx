@@ -1,13 +1,10 @@
 "use client";
-import { useSearchParams } from "next/navigation";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, Clock, Target } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export default function TrackPage() {
-  const searchParams = useSearchParams();
-  
   const [data, setData] = useState<any[]>([]);
   const [trendInfo, setTrendInfo] = useState<any>({});
   const [loading, setLoading] = useState(true);

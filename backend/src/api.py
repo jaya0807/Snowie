@@ -497,3 +497,74 @@ def submit_a4(data: A4Submission):
         "accuracy": result["accuracy"],
         "avg_latency": result["avg_latency"]
     }
+
+# --- AUTHENTICATION API ---
+from typing import Optional
+
+class ParentLoginRequest(BaseModel):
+    email: str
+    password: Optional[str] = ""
+
+class ChildLoginRequest(BaseModel):
+    child_id: str
+    pin: str
+    avatar: Optional[str] = "fox"
+
+@app.post("/api/auth/parent/login")
+def parent_login_endpoint(data: ParentLoginRequest):
+    email = data.email.strip()
+    if not email:
+        return {"status": "error", "message": "Email or Parent ID is required"}
+    
+    username = email.split("@")[0].replace(".", " ").title()
+    return {
+        "status": "success",
+        "user": {
+            "role": "parent",
+            "email": email,
+            "name": username,
+            "token": f"parent_tok_{int(time.time())}",
+            "children": [
+                {"id": "P1", "name": "Aarav M.", "age": 6},
+                {"id": "P2", "name": "Priya S.", "age": 5}
+            ]
+        }
+    }
+
+@app.post("/api/auth/child/login")
+def child_login_endpoint(data: ChildLoginRequest):
+    child_id = data.child_id.strip()
+    pin = data.pin.strip()
+    if not child_id:
+        return {"status": "error", "message": "Child ID or name is required"}
+    if len(pin) != 4 or not pin.isdigit():
+        return {"status": "error", "message": "A 4-digit PIN is required"}
+
+    name = child_id
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT name FROM participants WHERE participant_id = ? OR name LIKE ? LIMIT 1", (child_id, f"%{child_id}%"))
+            row = cursor.fetchone()
+            if row and row["name"]:
+                name = row["name"]
+    except Exception:
+        pass
+
+    return {
+        "status": "success",
+        "user": {
+            "role": "child",
+            "child_id": child_id,
+            "name": name,
+            "avatar": data.avatar or "fox",
+            "token": f"child_tok_{int(time.time())}",
+            "stars": 15
+        }
+    }
+
+@app.post("/api/auth/logout")
+def logout_endpoint():
+    return {"status": "success", "message": "Logged out successfully"}
+

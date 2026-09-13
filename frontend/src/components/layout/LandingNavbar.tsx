@@ -45,7 +45,7 @@ export function LandingNavbar() {
 
       <div>
         <Link 
-          href="/dashboard" 
+          href="/login" 
           className="flex items-center gap-2 btn-primary px-6 py-2.5 font-medium transition-all"
         >
           <User className="w-4 h-4" />

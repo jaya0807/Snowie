@@ -1,4 +1,5 @@
 "use client";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useState, useEffect, useRef } from "react";
@@ -7,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 
-export default function LiveSession() {
+function LiveSessionContent() {
   const searchParams = useSearchParams();
   const activityId = searchParams.get("activity") || "A2";
   
@@ -158,5 +159,13 @@ export default function LiveSession() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LiveSession() {
+  return (
+    <Suspense fallback={<div className="p-8 text-zinc-500">Loading session...</div>}>
+      <LiveSessionContent />
+    </Suspense>
   );
 }

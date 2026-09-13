@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Activity1UI from "@/activities/a1_natural_interaction/Activity1UI";
 import Activity2UI from "@/activities/a2_follow_instruction/Activity2UI";
@@ -9,7 +10,7 @@ import Activity5UI from "@/activities/a5_emotion_social/Activity5UI";
 import Activity6UI from "@/activities/a6_controlled_challenge/Activity6UI";
 import { ArrowLeft } from "lucide-react";
 
-export default function ChildMode() {
+function ChildContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const activityId = searchParams.get("activity") || "A1";
@@ -35,5 +36,13 @@ export default function ChildMode() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function ChildMode() {
+  return (
+    <Suspense fallback={<div className="h-screen w-screen bg-zinc-950 flex items-center justify-center text-white">Loading...</div>}>
+      <ChildContent />
+    </Suspense>
   );
 }
