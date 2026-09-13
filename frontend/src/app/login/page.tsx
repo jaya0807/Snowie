@@ -2,15 +2,55 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, Heart } from "lucide-react";
-import { LoginChoice } from "@/components/auth/LoginChoice";
-import { ParentLogin } from "@/components/auth/ParentLogin";
-import { ChildLogin } from "@/components/auth/ChildLogin";
-
-type LoginMode = "choice" | "parent" | "child";
+import { ArrowLeft, Sparkles, Heart, Mail, User as UserIcon, Lock, Eye, EyeOff } from "lucide-react";
+import { LoginCard } from "@/components/auth/LoginCard";
+import { Button } from "@/components/common/Button";
+import { ErrorMessage } from "@/components/common/ErrorMessage";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
-  const [mode, setMode] = useState<LoginMode>("choice");
+  const router = useRouter();
+  const { loginParent } = useAuth(); // We'll keep using this context for now
+
+  const [email, setEmail] = useState("");
+  const [childName, setChildName] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+
+    if (!email.trim() || !childName.trim() || !password) {
+      setErrorMessage("Please fill out all fields.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Assuming loginParent can handle this, or we just simulate for now
+      const res = await loginParent({
+        email: email.trim(),
+        password,
+      });
+
+      if (res.success) {
+        router.push("/parent-dashboard");
+      } else {
+        setErrorMessage(
+          res.error || "Oops! We couldn’t log you in. Please check your details and try again."
+        );
+      }
+    } catch {
+      setErrorMessage("Oops! We couldn’t log you in. Please check your details and try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-marketing-bg via-[#EEF4F9] to-brand-blue-light font-sans flex flex-col justify-between relative overflow-x-hidden selection:bg-brand/20">
@@ -78,32 +118,144 @@ export default function LoginPage() {
           </div>
 
           <h1 className="text-3xl md:text-4xl font-extrabold text-marketing-dark tracking-tight leading-tight">
-            Welcome Back! 👋
+            Welcome Back! 💛
           </h1>
 
           <p className="text-zinc-600 text-sm md:text-base mt-2">
-            {mode === "choice" && "Choose how you want to continue"}
-            {mode === "parent" && "Parent & Professional Login Portal"}
-            {mode === "child" && "Explorer Adventure Station"}
+            Log in to continue your child's observation journey.
           </p>
         </div>
 
         {/* Dynamic Form View */}
-        <div className="w-full transition-all duration-300">
-          {mode === "choice" && (
-            <LoginChoice
-              onSelectParent={() => setMode("parent")}
-              onSelectChild={() => setMode("child")}
-            />
-          )}
+        <div className="w-full max-w-md mx-auto transition-all duration-300 animate-in fade-in zoom-in-95">
+          <LoginCard variant="parent" className="relative">
+            {/* Error Notification */}
+            {errorMessage && (
+              <ErrorMessage
+                message={errorMessage}
+                onDismiss={() => setErrorMessage(null)}
+                className="mb-5"
+              />
+            )}
 
-          {mode === "parent" && (
-            <ParentLogin onBack={() => setMode("choice")} />
-          )}
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Parent Email Address */}
+              <div>
+                <label
+                  htmlFor="parent-email"
+                  className="block text-xs font-bold text-zinc-700 uppercase tracking-wider mb-1.5"
+                >
+                  Parent Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    id="parent-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email address"
+                    className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder:text-zinc-400 focus:bg-white focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all outline-none"
+                    autoComplete="username"
+                    required
+                  />
+                </div>
+              </div>
 
-          {mode === "child" && (
-            <ChildLogin onBack={() => setMode("choice")} />
-          )}
+              {/* Child Name */}
+              <div>
+                <label
+                  htmlFor="child-name"
+                  className="block text-xs font-bold text-zinc-700 uppercase tracking-wider mb-1.5"
+                >
+                  Child Name
+                </label>
+                <div className="relative">
+                  <UserIcon className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    id="child-name"
+                    type="text"
+                    value={childName}
+                    onChange={(e) => setChildName(e.target.value)}
+                    placeholder="Enter your child's name"
+                    className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder:text-zinc-400 focus:bg-white focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all outline-none"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label
+                    htmlFor="parent-password"
+                    className="block text-xs font-bold text-zinc-700 uppercase tracking-wider"
+                  >
+                    Password
+                  </label>
+                </div>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    id="parent-password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="w-full pl-10 pr-11 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder:text-zinc-400 focus:bg-white focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all outline-none"
+                    autoComplete="current-password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 cursor-pointer p-1"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Forgot Password */}
+              <div className="flex justify-end mt-1 mb-2">
+                <button
+                  type="button"
+                  className="text-xs text-brand hover:underline font-medium cursor-pointer"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+
+              <Button
+                type="submit"
+                variant="secondary"
+                size="lg"
+                isLoading={isLoading}
+                className="w-full mt-2"
+              >
+                Login
+              </Button>
+            </form>
+
+            {/* Signup Link */}
+            <div className="mt-6 pt-5 border-t border-zinc-100 text-center">
+              <span className="text-xs text-zinc-500 mr-1.5">
+                Don't have an account yet?
+              </span>
+              <Link
+                href="/signup"
+                className="text-xs font-semibold text-brand hover:underline cursor-pointer"
+              >
+                Sign Up
+              </Link>
+            </div>
+          </LoginCard>
         </div>
       </main>
 
