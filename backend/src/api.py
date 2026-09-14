@@ -117,15 +117,6 @@ from grow.goal_engine import GoalEngine
 from grow.recommendation_engine import RecommendationEngine
 from track.progress_tracker import ProgressTracker
 
-@app.get("/api/grow/goals")
-def get_goals(patient_id: str = "P1"):
-    engine = GoalEngine(db_connection=DB_PATH)
-    # Stub returning a mock goal for the UI
-    return {
-        "goals": [
-            engine.create_goal(patient_id, "instruction_following", "Improve completion of two-step instructions", 0.60, 0.80)
-        ]
-    }
 
 @app.get("/api/grow/recommend")
 def get_recommendation(patient_id: str = "P1"):
@@ -505,10 +496,6 @@ class ParentLoginRequest(BaseModel):
     email: str
     password: Optional[str] = ""
 
-class ChildLoginRequest(BaseModel):
-    child_id: str
-    pin: str
-    avatar: Optional[str] = "fox"
 
 @app.post("/api/auth/parent/login")
 def parent_login_endpoint(data: ParentLoginRequest):
@@ -531,38 +518,6 @@ def parent_login_endpoint(data: ParentLoginRequest):
         }
     }
 
-@app.post("/api/auth/child/login")
-def child_login_endpoint(data: ChildLoginRequest):
-    child_id = data.child_id.strip()
-    pin = data.pin.strip()
-    if not child_id:
-        return {"status": "error", "message": "Child ID or name is required"}
-    if len(pin) != 4 or not pin.isdigit():
-        return {"status": "error", "message": "A 4-digit PIN is required"}
-
-    name = child_id
-    try:
-        with sqlite3.connect(DB_PATH) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute("SELECT name FROM participants WHERE participant_id = ? OR name LIKE ? LIMIT 1", (child_id, f"%{child_id}%"))
-            row = cursor.fetchone()
-            if row and row["name"]:
-                name = row["name"]
-    except Exception:
-        pass
-
-    return {
-        "status": "success",
-        "user": {
-            "role": "child",
-            "child_id": child_id,
-            "name": name,
-            "avatar": data.avatar or "fox",
-            "token": f"child_tok_{int(time.time())}",
-            "stars": 15
-        }
-    }
 
 @app.post("/api/auth/logout")
 def logout_endpoint():

@@ -339,15 +339,7 @@ export function SignupForm({ onBack }: SignupFormProps) {
                     </Button>
                   </div>
                   
-                  <div className="mt-6 text-center">
-                    <span className="text-sm text-zinc-500 mr-2 font-medium">Already have an account?</span>
-                    <Link
-                      href="/login"
-                      className="text-sm font-bold text-[#176B9C] hover:text-[#135A84] hover:underline transition-colors"
-                    >
-                      Log in here
-                    </Link>
-                  </div>
+                  
 
                 </div>
               )}

@@ -5,7 +5,8 @@ import { User, Activity } from "lucide-react";
 
 export function LandingNavbar() {
   return (
-    <nav className="w-full flex items-center justify-between py-6 px-8 max-w-7xl mx-auto z-50 relative">
+    <header className="w-[96%] max-w-7xl mx-auto mt-4 sticky top-4 bg-white/85 backdrop-blur-xl border border-black/5 shadow-md shadow-[#176B9C]/5 rounded-2xl z-50 transition-all duration-300">
+      <nav className="w-full flex items-center justify-between py-3 px-6 mx-auto">
       <div className="flex items-center gap-2">
         <div className="text-brand-accent">
           <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -24,7 +25,7 @@ export function LandingNavbar() {
       </div>
 
       <div className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-900">
-        <Link href="/" className="px-4 py-2 bg-brand-surface-alt rounded-full text-zinc-900">
+        <Link href="/" className="px-4 py-2 bg-brand-surface-alt rounded-lg text-zinc-900">
           Home
         </Link>
         <Link href="#about" className="hover:text-brand-accent transition-colors">
@@ -40,19 +41,20 @@ export function LandingNavbar() {
 
       <div className="flex items-center gap-3">
         <Link 
-          href="/login" 
-          className="flex items-center justify-center bg-white text-brand border border-brand/20 hover:border-brand/50 hover:bg-brand-light/20 shadow-sm hover:shadow px-6 py-2.5 rounded-[6px] font-medium transition-all"
+          href="/login?tab=signup" 
+          className="flex items-center justify-center bg-white text-brand border border-brand/20 hover:border-brand/50 hover:bg-brand-light/20 shadow-sm hover:shadow px-6 py-2.5 rounded-lg font-medium transition-all"
         >
           Sign Up
         </Link>
         <Link 
           href="/login" 
-          className="flex items-center gap-2 btn-primary px-6 py-2.5 font-medium transition-all"
+          className="flex items-center gap-2 btn-primary rounded-lg px-6 py-2.5 font-medium transition-all"
         >
           <User className="w-4 h-4" />
           Login
         </Link>
       </div>
     </nav>
+    </header>
   );
 }

@@ -1,20 +1,26 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Sparkles, Heart, Mail, User as UserIcon, Lock, Eye, EyeOff } from "lucide-react";
 import { LoginCard } from "@/components/auth/LoginCard";
 import { Button } from "@/components/common/Button";
 import { ErrorMessage } from "@/components/common/ErrorMessage";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { SignupForm } from "@/components/auth/SignupForm";
 
-export default function AuthPage() {
+function AuthContent() {
   const router = useRouter();
   const { loginParent } = useAuth();
   
-  const [isLogin, setIsLogin] = useState(true);
+  const searchParams = useSearchParams();
+  const [isLogin, setIsLogin] = useState(searchParams.get('tab') !== 'signup');
+
+  useEffect(() => {
+    setIsLogin(searchParams.get('tab') !== 'signup');
+  }, [searchParams]);
 
   const [email, setEmail] = useState("");
   const [childName, setChildName] = useState("");
@@ -76,19 +82,16 @@ export default function AuthPage() {
 
       <main className="flex-1 flex flex-col items-center justify-center py-8 px-4 w-full relative z-10">
         <div className="text-center max-w-xl mx-auto mb-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 border border-brand/10 text-zinc-700 text-xs font-medium mb-3 shadow-2xs backdrop-blur-xs">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span>AI-Assisted Child Observation & Development</span>
-          </div>
+          
           <h1 className="text-3xl md:text-4xl font-extrabold text-marketing-dark tracking-tight leading-tight">
-            {isLogin ? "Welcome Back! 💛" : "Start Your Free Journey ✨"}
+            {isLogin ? "Welcome Back!" : "Start Your Free Journey"}
           </h1>
           <p className="text-zinc-600 text-sm md:text-base mt-2">
             {isLogin ? "Log in to continue your child's observation journey." : "Create an account to track milestones, log observations, and build personalized activities."}
           </p>
         </div>
 
-        <div className="w-full max-w-md mx-auto transition-all duration-300 animate-in fade-in zoom-in-95">
+        <div className={`w-full mx-auto transition-all duration-300 animate-in fade-in zoom-in-95 ${isLogin ? "max-w-md" : "max-w-5xl"}`}>
           {isLogin ? (
             <LoginCard variant="parent" className="relative">
               {errorMessage && <ErrorMessage message={errorMessage} onDismiss={() => setErrorMessage(null)} className="mb-5" />}
@@ -127,10 +130,11 @@ export default function AuthPage() {
           ) : (
             <div>
               <SignupForm />
-              <div className="mt-6 text-center">
-                <span className="text-xs text-zinc-500 mr-1.5">Already have an account?</span>
-                <button onClick={() => setIsLogin(true)} className="text-xs font-semibold text-brand hover:underline cursor-pointer">Log In</button>
+              <div className="mt-8 text-center pb-4">
+                <span className="text-sm text-zinc-500 mr-2 font-medium">Already have an account?</span>
+                <button onClick={() => setIsLogin(true)} className="text-sm font-bold text-[#176B9C] hover:text-[#135A84] hover:underline transition-colors cursor-pointer">Log In</button>
               </div>
+              
             </div>
           )}
         </div>
@@ -142,5 +146,14 @@ export default function AuthPage() {
         </p>
       </footer>
     </div>
+  );
+}
+
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white" />}>
+      <AuthContent />
+    </Suspense>
   );
 }
