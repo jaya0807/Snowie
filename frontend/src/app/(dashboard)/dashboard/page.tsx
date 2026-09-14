@@ -92,7 +92,7 @@ export default function DashboardHome() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0">
-        <Card size="sm" className="lg:col-span-2 glass flex flex-col h-full">
+        <Card size="sm" className="lg:col-span-3 glass flex flex-col h-full">
           <CardHeader className="shrink-0 flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-lg text-zinc-900">Weekly Engagement Trend</CardTitle>
@@ -124,40 +124,6 @@ export default function DashboardHome() {
                 </AreaChart>
               </ResponsiveContainer>
             )}
-          </CardContent>
-        </Card>
-
-        <Card size="sm" className="glass flex flex-col h-full">
-          <CardHeader className="shrink-0">
-            <CardTitle className="text-lg text-zinc-900">Recent Activities</CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 flex flex-col gap-4 overflow-auto min-h-0 pt-0">
-            {!isMounted || data.recentSessions.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center text-zinc-500 text-sm">
-                No sessions yet
-              </div>
-            ) : (
-              data.recentSessions.map((session: any) => (
-                <div key={session.id} className="bg-white border border-brand-border p-4 rounded-lg flex flex-col gap-3 shrink-0 shadow-[0_4px_16px_rgba(23,107,156,0.02)]">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-medium text-sm text-zinc-900">{session.activity}</p>
-                      <p className="text-xs text-zinc-500 mt-1">{session.time}</p>
-                    </div>
-                    <Badge variant="outline" className={`text-[10px] ${session.status === 'Completed' ? 'border-success-light text-success-light' : 'border-warning-light text-warning-light'}`}>
-                      {session.status}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-4 text-xs text-zinc-500">
-                    <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-zinc-900" /> {session.duration}</span>
-                    <span className="flex items-center gap-1"><Target className="w-3 h-3 text-zinc-900" /> {session.accuracy} Acc</span>
-                  </div>
-                </div>
-              ))
-            )}
-            <button className="mt-auto w-full py-2 text-sm font-medium text-zinc-900 hover:bg-white/50 transition-colors border border-brand-border bg-white rounded-lg shrink-0">
-              View Activity History
-            </button>
           </CardContent>
         </Card>
       </div>

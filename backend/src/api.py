@@ -135,14 +135,7 @@ def get_trends(patient_id: str = "P1", activity_id: str = "A2"):
     db = Database(DB_PATH)
     history = db.get_session_history(patient_id, activity_id)
     
-    # If not enough history, inject some starter history so the chart isn't empty on day 1
-    if len(history) < 2:
-        mock_history = [
-            {"session_id": "S1", "accuracy": 0.45, "response_time_sec": 4.8},
-            {"session_id": "S2", "accuracy": 0.50, "response_time_sec": 4.2},
-            {"session_id": "S3", "accuracy": 0.48, "response_time_sec": 4.5}
-        ]
-        history = mock_history + history
+    # Real data only - no mock history injected
         
     trend = "Stable"
     if len(history) >= 2:

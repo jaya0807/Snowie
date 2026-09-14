@@ -256,7 +256,7 @@ export function SignupForm({ onBack, onLoginClick }: SignupFormProps) {
                   if (onLoginClick) onLoginClick();
                   else router.push('/login');
                 }} 
-                className="text-[#176B9C] hover:text-[#135A84] hover:underline font-bold transition-colors cursor-pointer"
+                className="text-brand hover:text-brand-dark hover:underline font-bold transition-colors cursor-pointer"
               >
                 Log in here
               </button>
@@ -267,7 +267,7 @@ export function SignupForm({ onBack, onLoginClick }: SignupFormProps) {
               variant="primary"
               size="lg"
               isLoading={isLoading}
-              className="w-full md:w-auto md:px-12 md:py-3.5 shadow-md hover:shadow-lg transition-shadow text-base rounded-xl font-bold"
+              className="w-full md:w-auto md:px-12 md:py-3.5 shadow-md hover:shadow-lg transition-shadow text-base font-bold"
             >
               Create Account <ArrowRight className="w-5 h-5 ml-1.5" />
             </Button>
