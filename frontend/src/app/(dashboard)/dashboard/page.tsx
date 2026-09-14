@@ -34,28 +34,16 @@ export default function DashboardHome() {
         }
       })
       .catch(err => {
-        // Backend not running, populate with dummy data for demonstration
+        // Backend not running, reset to empty data
         setData({
           stats: {
-            totalSessions: { value: "12", trend: "+2 this week", isPositive: true, label: "Total Sessions" },
-            avgEngagement: { value: "85%", trend: "+5%", isPositive: true, label: "Avg Focus Time" },
-            avgDuration: { value: "15m", trend: "Steady", isPositive: true, label: "Session Duration" },
-            goalAchievement: { value: "40%", trend: "+10%", isPositive: true, label: "Goal Progress" }
+            totalSessions: { value: "0", trend: "-", isPositive: true, label: "Total Sessions" },
+            avgEngagement: { value: "0%", trend: "-", isPositive: true, label: "Avg Focus Time" },
+            avgDuration: { value: "0m", trend: "-", isPositive: true, label: "Session Duration" },
+            goalAchievement: { value: "0%", trend: "-", isPositive: true, label: "Goal Progress" }
           },
-          recentSessions: [
-            { id: "s1", activity: "A1: Natural Interaction", time: "Today, 10:30 AM", status: "Completed", duration: "12m", accuracy: "90%" },
-            { id: "s2", activity: "A2: Follow Instruction", time: "Yesterday, 2:15 PM", status: "Completed", duration: "15m", accuracy: "85%" },
-            { id: "s3", activity: "A3: Target Finding", time: "Mon, 9:00 AM", status: "Incomplete", duration: "5m", accuracy: "N/A" }
-          ],
-          chartData: [
-            { name: "Mon", engagement: 65 },
-            { name: "Tue", engagement: 70 },
-            { name: "Wed", engagement: 68 },
-            { name: "Thu", engagement: 80 },
-            { name: "Fri", engagement: 85 },
-            { name: "Sat", engagement: 90 },
-            { name: "Sun", engagement: 88 }
-          ]
+          recentSessions: [],
+          chartData: []
         });
       });
   }, []);

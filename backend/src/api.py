@@ -54,22 +54,16 @@ def get_dashboard_data(patient_id: str = "P1"):
             "status": "Completed"
         })
 
-    # Return simplified single-child overview data
+    # Return actual database overview data
     return {
         "stats": {
-            "totalSessions": {"value": len(recent) + 12, "trend": f"+{len(recent)} this week", "isPositive": True, "label": "Total Sessions"},
-            "avgEngagement": {"value": "78%", "trend": "+5% from last week", "isPositive": True, "label": "Avg Focus Time"},
-            "avgDuration": {"value": "18m", "trend": "Optimal", "isPositive": True, "label": "Session Duration"},
-            "goalAchievement": {"value": "60%", "trend": "On track", "isPositive": True, "label": "Goal Progress"}
+            "totalSessions": {"value": len(recent), "trend": "0 this week", "isPositive": True, "label": "Total Sessions"},
+            "avgEngagement": {"value": "0%", "trend": "0% from last week", "isPositive": True, "label": "Avg Focus Time"},
+            "avgDuration": {"value": "0m", "trend": "Needs more data", "isPositive": True, "label": "Session Duration"},
+            "goalAchievement": {"value": "0%", "trend": "Not started", "isPositive": True, "label": "Goal Progress"}
         },
         "recentSessions": formatted_recent,
-        "chartData": [
-            {"name": "Mon", "engagement": 65},
-            {"name": "Tue", "engagement": 72},
-            {"name": "Wed", "engagement": 68},
-            {"name": "Thu", "engagement": 80},
-            {"name": "Fri", "engagement": 78}
-        ]
+        "chartData": []
     }
 @app.get("/api/profiles")
 def get_profiles():

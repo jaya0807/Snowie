@@ -91,7 +91,7 @@ function AuthContent() {
           </p>
         </div>
 
-        <div className={`w-full mx-auto transition-all duration-300 animate-in fade-in zoom-in-95 ${isLogin ? "max-w-md" : "max-w-5xl"}`}>
+        <div className={`w-full mx-auto transition-all duration-300 animate-in fade-in zoom-in-95 ${isLogin ? "max-w-[420px]" : "max-w-5xl"}`}>
           {isLogin ? (
             <LoginCard variant="parent" className="relative">
               {errorMessage && <ErrorMessage message={errorMessage} onDismiss={() => setErrorMessage(null)} className="mb-5" />}
@@ -129,12 +129,7 @@ function AuthContent() {
             </LoginCard>
           ) : (
             <div>
-              <SignupForm />
-              <div className="mt-8 text-center pb-4">
-                <span className="text-sm text-zinc-500 mr-2 font-medium">Already have an account?</span>
-                <button onClick={() => setIsLogin(true)} className="text-sm font-bold text-[#176B9C] hover:text-[#135A84] hover:underline transition-colors cursor-pointer">Log In</button>
-              </div>
-              
+              <SignupForm onLoginClick={() => setIsLogin(true)} />
             </div>
           )}
         </div>
