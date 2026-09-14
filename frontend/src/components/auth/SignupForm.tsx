@@ -74,7 +74,7 @@ export function SignupForm({ onBack }: SignupFormProps) {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1500));
       // Redirect to login or dashboard
-      router.push("/login");
+      router.push("/dashboard");
     } catch {
       setErrorMessage("Oops! We couldn't create your account right now. Please try again.");
     } finally {

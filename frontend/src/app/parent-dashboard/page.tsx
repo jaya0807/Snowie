@@ -27,8 +27,6 @@ export default function ParentDashboardPage() {
     if (!isLoading) {
       if (!user) {
         router.push("/login");
-      } else if (role === "child") {
-        router.push("/child-home");
       }
     }
   }, [user, role, isLoading, router]);

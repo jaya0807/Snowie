@@ -25,7 +25,7 @@ export default function LandingPage() {
           
           <div className="flex flex-col sm:flex-row gap-4 pt-4">
             <Link 
-              href="/signup" 
+              href="/login" 
               className="flex items-center justify-center gap-2 bg-[#176B9C] hover:bg-[#135A84] text-white px-8 py-3.5 rounded-lg font-medium transition-all shadow-sm"
             >
               <Rocket className="w-5 h-5" />

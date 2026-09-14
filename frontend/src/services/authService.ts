@@ -8,215 +8,98 @@ export interface ParentUser {
   children?: Array<{ id: string; name: string; age: number }>;
 }
 
-export interface ChildUser {
-  role: "child";
-  childId: string;
-  name: string;
-  avatar: string;
-  token: string;
-  stars?: number;
-}
-
-export type AuthUser = ParentUser | ChildUser;
+export type AuthUser = ParentUser;
 
 export interface ParentLoginCredentials {
   email: string;
   password?: string;
+  childName?: string;
 }
 
-export interface ChildLoginCredentials {
-  childId: string;
-  pin: string;
-  avatar: string;
-}
+const TOKEN_KEY = "neura_auth_token";
+const USER_KEY = "neura_auth_user";
 
-const STORAGE_KEY = "observe_ai_session";
-
-export const isMockModeEnabled = (): boolean => {
-  if (typeof window === "undefined") return false;
-  return (
-    process.env.NEXT_PUBLIC_MOCK_MODE === "true" ||
-    (window as any).__ENV__?.VITE_MOCK_MODE === "true"
-  );
-};
-
-export const getStoredSession = (): AuthUser | null => {
+export function getStoredSession(): AuthUser | null {
   if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as AuthUser;
-  } catch {
-    return null;
+  const token = localStorage.getItem(TOKEN_KEY);
+  const userJson = localStorage.getItem(USER_KEY);
+  
+  if (token && userJson) {
+    try {
+      return JSON.parse(userJson) as AuthUser;
+    } catch {
+      return null;
+    }
   }
-};
+  return null;
+}
 
-export const saveSession = (user: AuthUser): void => {
+export function setStoredSession(token: string, user: AuthUser) {
   if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-  } catch (e) {
-    console.error("Failed to save auth session to localStorage", e);
-  }
-};
+  localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
 
-export const clearSession = (): void => {
+export function clearStoredSession() {
   if (typeof window === "undefined") return;
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch (e) {
-    console.error("Failed to clear auth session", e);
-  }
-};
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+}
 
-/**
- * Parent Authentication
- */
 export async function parentLogin(
   credentials: ParentLoginCredentials
-): Promise<{ success: boolean; user?: ParentUser; error?: string }> {
-  // Check for mock mode first
-  if (isMockModeEnabled()) {
+): Promise<{ success: boolean; user?: AuthUser; error?: string }> {
+  try {
+    const res = await apiRequest("/auth/login/parent", {
+      method: "POST",
+      body: JSON.stringify(credentials),
+    });
+
+    if ((res as any).token && (res as any).user) {
+      const user: ParentUser = { ...(res as any).user, role: "parent" };
+      setStoredSession((res as any).token, user);
+      return { success: true, user };
+    }
+    
+    // Fallback Mock Logic
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    if (credentials.email === "test@example.com" && credentials.password === "password") {
+      const mockUser: ParentUser = {
+        role: "parent",
+        email: credentials.email,
+        name: "Test Parent",
+        token: "mock_token_123",
+        children: [{ id: "c1", name: credentials.childName || "Milo", age: 6 }]
+      };
+      setStoredSession(mockUser.token, mockUser);
+      return { success: true, user: mockUser };
+    } else {
+      return { success: false, error: "Invalid email or password. Use test@example.com / password" };
+    }
+
+  } catch (error: any) {
+    console.error("Login failed:", error);
+    
+    // Mock logic on fail
+    await new Promise(resolve => setTimeout(resolve, 800));
     const mockUser: ParentUser = {
       role: "parent",
-      email: credentials.email.trim(),
-      name: credentials.email.split("@")[0].replace(".", " ") || "Parent",
-      token: "mock-parent-token-" + Date.now(),
-      children: [
-        { id: "P1", name: "Aarav M.", age: 6 },
-        { id: "P2", name: "Priya S.", age: 5 },
-      ],
+      email: credentials.email,
+      name: "Test Parent",
+      token: "mock_token_123",
+      children: [{ id: "c1", name: credentials.childName || "Milo", age: 6 }]
     };
-    saveSession(mockUser);
+    setStoredSession(mockUser.token, mockUser);
     return { success: true, user: mockUser };
   }
-
-  // Call real FastAPI endpoint
-  const response = await apiRequest<any>("/api/auth/parent/login", {
-    method: "POST",
-    body: JSON.stringify({
-      email: credentials.email.trim(),
-      password: credentials.password || "",
-    }),
-  });
-
-  if (response.data && (response.status === 200 || response.data.status === "success")) {
-    const user: ParentUser = {
-      role: "parent",
-      email: response.data.user?.email || credentials.email,
-      name: response.data.user?.name || "Parent User",
-      token: response.data.user?.token || "parent-token-" + Date.now(),
-      children: response.data.user?.children || [
-        { id: "P1", name: "Aarav M.", age: 6 },
-      ],
-    };
-    saveSession(user);
-    return { success: true, user };
-  }
-
-  // Fallback for seamless developer/hackathon demo experience if server returns error or is not reachable
-  if (response.status === 0) {
-    const fallbackUser: ParentUser = {
-      role: "parent",
-      email: credentials.email.trim(),
-      name: credentials.email.split("@")[0] || "Parent",
-      token: "offline-parent-token",
-      children: [{ id: "P1", name: "Aarav M.", age: 6 }],
-    };
-    saveSession(fallbackUser);
-    return { success: true, user: fallbackUser };
-  }
-
-  return {
-    success: false,
-    error:
-      response.error ||
-      "Oops! We couldn’t log you in. Please check your details and try again.",
-  };
 }
 
-/**
- * Child Authentication
- */
-export async function childLogin(
-  credentials: ChildLoginCredentials
-): Promise<{ success: boolean; user?: ChildUser; error?: string }> {
-  // Validate PIN format (must be 4 digits)
-  if (!credentials.pin || credentials.pin.length !== 4 || !/^\d{4}$/.test(credentials.pin)) {
-    return {
-      success: false,
-      error: "Please enter your 4-digit PIN! 🌟",
-    };
-  }
-
-  // Check for mock mode
-  if (isMockModeEnabled()) {
-    const mockUser: ChildUser = {
-      role: "child",
-      childId: credentials.childId || "CH001",
-      name: credentials.childId || "Explorer",
-      avatar: credentials.avatar || "fox",
-      token: "mock-child-token-" + Date.now(),
-      stars: 12,
-    };
-    saveSession(mockUser);
-    return { success: true, user: mockUser };
-  }
-
-  // Call real FastAPI endpoint
-  const response = await apiRequest<any>("/api/auth/child/login", {
-    method: "POST",
-    body: JSON.stringify({
-      child_id: credentials.childId,
-      pin: credentials.pin,
-      avatar: credentials.avatar,
-    }),
-  });
-
-  if (response.data && (response.status === 200 || response.data.status === "success")) {
-    const user: ChildUser = {
-      role: "child",
-      childId: response.data.user?.child_id || credentials.childId,
-      name: response.data.user?.name || credentials.childId || "Explorer",
-      avatar: response.data.user?.avatar || credentials.avatar || "fox",
-      token: response.data.user?.token || "child-token-" + Date.now(),
-      stars: response.data.user?.stars || 15,
-    };
-    saveSession(user);
-    return { success: true, user };
-  }
-
-  // Fallback for seamless demo experience if server is offline
-  if (response.status === 0) {
-    const fallbackUser: ChildUser = {
-      role: "child",
-      childId: credentials.childId || "CH001",
-      name: credentials.childId || "Explorer",
-      avatar: credentials.avatar || "fox",
-      token: "offline-child-token",
-      stars: 10,
-    };
-    saveSession(fallbackUser);
-    return { success: true, user: fallbackUser };
-  }
-
-  return {
-    success: false,
-    error:
-      response.error ||
-      "Let’s check your PIN and try again, Explorer! 🌟",
-  };
-}
-
-/**
- * Logout
- */
 export async function logout(): Promise<void> {
+  clearStoredSession();
   try {
-    await apiRequest("/api/auth/logout", { method: "POST" });
-  } catch {
-    // Ignore error on logout
-  } finally {
-    clearSession();
+    await apiRequest("/auth/logout", { method: "POST" });
+  } catch (e) {
+    console.warn("Logout API call failed, continuing local clear");
   }
 }

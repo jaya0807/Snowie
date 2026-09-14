@@ -3,12 +3,8 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import {
   AuthUser,
-  ParentUser,
-  ChildUser,
   ParentLoginCredentials,
-  ChildLoginCredentials,
   parentLogin as serviceParentLogin,
-  childLogin as serviceChildLogin,
   logout as serviceLogout,
   getStoredSession,
 } from "@/services/authService";
@@ -16,10 +12,9 @@ import { useRouter } from "next/navigation";
 
 interface AuthContextType {
   user: AuthUser | null;
-  role: "parent" | "child" | null;
+  role: "parent" | null;
   isLoading: boolean;
   loginParent: (creds: ParentLoginCredentials) => Promise<{ success: boolean; error?: string }>;
-  loginChild: (creds: ChildLoginCredentials) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -48,15 +43,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { success: false, error: res.error };
   };
 
-  const loginChild = async (creds: ChildLoginCredentials) => {
-    const res = await serviceChildLogin(creds);
-    if (res.success && res.user) {
-      setUser(res.user);
-      return { success: true };
-    }
-    return { success: false, error: res.error };
-  };
-
   const logout = async () => {
     await serviceLogout();
     setUser(null);
@@ -70,7 +56,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: user?.role || null,
         isLoading,
         loginParent,
-        loginChild,
         logout,
       }}
     >

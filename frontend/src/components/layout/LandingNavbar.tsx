@@ -40,7 +40,7 @@ export function LandingNavbar() {
 
       <div className="flex items-center gap-3">
         <Link 
-          href="/signup" 
+          href="/login" 
           className="flex items-center justify-center bg-white text-brand border border-brand/20 hover:border-brand/50 hover:bg-brand-light/20 shadow-sm hover:shadow px-6 py-2.5 rounded-[6px] font-medium transition-all"
         >
           Sign Up
