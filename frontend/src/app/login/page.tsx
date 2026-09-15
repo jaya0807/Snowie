@@ -10,6 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { SignupForm } from "@/components/auth/SignupForm";
+import { Logo } from "@/components/common/Logo";
 
 function AuthContent() {
   const router = useRouter();
@@ -59,20 +60,8 @@ function AuthContent() {
       <div className="absolute bottom-16 right-10 w-64 h-64 bg-amber-200/30 rounded-full blur-3xl pointer-events-none -z-10"></div>
 
       <header className="w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between relative z-20">
-        <Link href="/" className="inline-flex items-center gap-2 group transition-transform hover:-translate-x-0.5 cursor-pointer">
-          <div className="text-brand-accent">
-            <svg width="36" height="36" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M20 0C8.954 0 0 8.954 0 20C0 31.046 8.954 40 20 40C31.046 40 40 31.046 40 20C40 8.954 31.046 0 20 0Z" fill="currentColor" opacity="0.1" />
-              <path d="M20 4C11.163 4 4 11.163 4 20C4 28.837 11.163 36 20 36C28.837 36 36 28.837 36 20C36 11.163 28.837 4 20 4Z" fill="currentColor" opacity="0.85" />
-              <circle cx="14" cy="16" r="2" fill="white" />
-              <circle cx="26" cy="16" r="2" fill="white" />
-              <path d="M16 23C16 23 18 25 20 25C22 25 24 23 24 23" stroke="white" strokeWidth="2" strokeLinecap="round" />
-              <circle cx="20" cy="5" r="2.5" fill="#FFD76A" />
-            </svg>
-          </div>
-          <div>
-            <span className="font-extrabold text-sm text-zinc-900 tracking-tight block leading-tight">Snowie</span>
-          </div>
+        <Link href="/" className="inline-block group transition-transform hover:-translate-x-0.5 cursor-pointer">
+          <Logo iconSize={36} textSize="text-xl" />
         </Link>
         <Link href="/" className="text-xs font-semibold text-zinc-600 hover:text-zinc-900 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/70 hover:bg-white border border-black/5 shadow-xs transition-all cursor-pointer">
           <ArrowLeft className="w-3.5 h-3.5" />

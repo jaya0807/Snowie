@@ -2,26 +2,27 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Activity, Brain, Clock, Target, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Activity, Brain, Clock, Target, ArrowUpRight, ArrowDownRight, Eye } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
-  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer
 } from "recharts";
 
 export default function DashboardHome() {
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
   
-  const [data, setData] = useState({
+  const [data, setData] = useState<any>({
     stats: { 
-      totalSessions: { value: "Nil", trend: "Nil", isPositive: true, label: "Total Sessions" }, 
-      avgEngagement: { value: "Nil", trend: "Nil", isPositive: true, label: "Avg Focus Time" }, 
-      avgDuration: { value: "Nil", trend: "Nil", isPositive: true, label: "Session Duration" }, 
-      goalAchievement: { value: "0%", trend: "Nil", isPositive: true, label: "Goal Progress" } 
+      totalSessions: { value: "0", trend: "-", isPositive: true, label: "Total Sessions" }, 
+      headOrientation: { value: "—", trend: "-", isPositive: true, label: "Head Orientation" }, 
+      bodyMovement: { value: "—", handFlapping: "—", repeatedMovements: "—", label: "Body Movement" }, 
+      eyeTracking: { value: "—", trend: "-", isPositive: true, label: "Eye Tracking" } 
     },
-    recentSessions: [] as any[],
-    chartData: [] as any[]
+    recentSessions: [],
+    responseLatencyData: [],
+    interactionDurationData: []
   });
 
   useEffect(() => {
@@ -34,25 +35,26 @@ export default function DashboardHome() {
         }
       })
       .catch(err => {
-        // Backend not running, reset to empty data
+        // Backend not running or no data yet, fallback to empty stats mapping
         setData({
           stats: {
             totalSessions: { value: "0", trend: "-", isPositive: true, label: "Total Sessions" },
-            avgEngagement: { value: "0%", trend: "-", isPositive: true, label: "Avg Focus Time" },
-            avgDuration: { value: "0m", trend: "-", isPositive: true, label: "Session Duration" },
-            goalAchievement: { value: "0%", trend: "-", isPositive: true, label: "Goal Progress" }
+            headOrientation: { value: "—", trend: "-", isPositive: true, label: "Head Orientation" },
+            bodyMovement: { value: "—", handFlapping: "—", repeatedMovements: "—", label: "Body Movement" },
+            eyeTracking: { value: "—", trend: "-", isPositive: true, label: "Eye Tracking" }
           },
           recentSessions: [],
-          chartData: []
+          responseLatencyData: [],
+          interactionDurationData: []
         });
       });
   }, []);
 
   const statsList = [
-    { label: data.stats.totalSessions.label, value: data.stats.totalSessions.value, icon: Activity, trend: data.stats.totalSessions.trend, isPositive: data.stats.totalSessions.isPositive },
-    { label: data.stats.avgEngagement.label, value: data.stats.avgEngagement.value, icon: Brain, trend: data.stats.avgEngagement.trend, isPositive: data.stats.avgEngagement.isPositive },
-    { label: data.stats.avgDuration.label, value: data.stats.avgDuration.value, icon: Clock, trend: data.stats.avgDuration.trend, isPositive: data.stats.avgDuration.isPositive },
-    { label: data.stats.goalAchievement.label, value: data.stats.goalAchievement.value, icon: Target, trend: data.stats.goalAchievement.trend, isPositive: data.stats.goalAchievement.isPositive },
+    { label: data.stats?.totalSessions?.label || "Total Sessions", value: data.stats?.totalSessions?.value || "0", icon: Activity, trend: data.stats?.totalSessions?.trend, isPositive: data.stats?.totalSessions?.isPositive },
+    { label: data.stats?.headOrientation?.label || "Head Orientation", value: data.stats?.headOrientation?.value || "—", icon: Brain, trend: data.stats?.headOrientation?.trend, isPositive: data.stats?.headOrientation?.isPositive },
+    { label: data.stats?.bodyMovement?.label || "Body Movement", value: data.stats?.bodyMovement?.value || "—", icon: Activity, handFlapping: data.stats?.bodyMovement?.handFlapping || "—", repeatedMovements: data.stats?.bodyMovement?.repeatedMovements || "—" },
+    { label: data.stats?.eyeTracking?.label || "Eye Tracking", value: data.stats?.eyeTracking?.value || "—", icon: Target, trend: data.stats?.eyeTracking?.trend, isPositive: data.stats?.eyeTracking?.isPositive },
   ];
 
   return (
@@ -82,50 +84,95 @@ export default function DashboardHome() {
             </CardHeader>
             <CardContent className="relative z-10">
               <div className="text-3xl font-black text-zinc-900 tracking-tight">{stat.value}</div>
-              <p className={`text-xs mt-2 font-medium flex items-center gap-1 ${stat.isPositive ? 'text-brand' : 'text-zinc-500'}`}>
-                {stat.isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                {stat.trend}
-              </p>
+              
+              {stat.label === "Body Movement" ? (
+                <>
+                  <div className="mt-3" />
+                  <div className="flex items-center text-xs text-zinc-600">
+                    <div className="flex flex-col flex-1">
+                      <span>Hand Flapping</span>
+                      <span className="font-medium mt-0.5">{stat.handFlapping}</span>
+                    </div>
+                    <div className="w-px h-8 bg-zinc-200 mx-2" />
+                    <div className="flex flex-col flex-1 pl-2">
+                      <span>Repetitive Movements</span>
+                      <span className="font-medium mt-0.5">{stat.repeatedMovements}</span>
+                    </div>
+                  </div>
+                </>
+              ) : stat.trend && stat.trend !== 'Nil' && stat.trend !== '-' ? (
+                <p className={`text-xs mt-2 font-medium flex items-center gap-1 ${stat.isPositive ? 'text-brand' : 'text-zinc-500'}`}>
+                  {stat.isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                  {stat.trend}
+                </p>
+              ) : null}
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0">
-        <Card size="sm" className="lg:col-span-3 glass flex flex-col h-full">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
+        
+        {/* GRAPH 1: Response Latency */}
+        <Card size="sm" className="glass flex flex-col h-full">
           <CardHeader className="shrink-0 flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="text-lg text-zinc-900">Weekly Engagement Trend</CardTitle>
-              <p className="text-xs text-zinc-500 mt-1">Focus percentage across all activities</p>
+              <CardTitle className="text-lg text-zinc-900">Response Latency</CardTitle>
+              <p className="text-xs text-zinc-500 mt-1">Response time across activities and sessions</p>
             </div>
           </CardHeader>
           <CardContent className="flex-1 min-h-0 relative">
-            {!isMounted || data.chartData.length === 0 ? (
+            {!isMounted || !data.responseLatencyData || data.responseLatencyData.length === 0 ? (
               <div className="w-full h-full flex flex-col items-center justify-center text-zinc-400">
-                <Activity className="w-8 h-8 mb-2 opacity-50" />
-                <p className="text-sm">No engagement data available yet</p>
+                <Clock className="w-8 h-8 mb-2 opacity-50" />
+                <p className="text-sm">No response latency data available yet</p>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={data.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorEngagement" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#176B9C" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#176B9C" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
+                <LineChart data={data.responseLatencyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#71717a' }} dy={10} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#71717a' }} />
                   <Tooltip 
                     contentStyle={{ borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                     itemStyle={{ color: '#176B9C', fontWeight: 600 }}
                   />
-                  <Area type="monotone" dataKey="engagement" stroke="#176B9C" strokeWidth={3} fillOpacity={1} fill="url(#colorEngagement)" activeDot={{ r: 6, strokeWidth: 0, fill: '#176B9C' }} />
-                </AreaChart>
+                  <Line type="monotone" dataKey="latency" stroke="#176B9C" strokeWidth={3} dot={{ r: 4, strokeWidth: 0, fill: '#176B9C' }} activeDot={{ r: 6, strokeWidth: 0, fill: '#176B9C' }} />
+                </LineChart>
               </ResponsiveContainer>
             )}
           </CardContent>
         </Card>
+
+        {/* GRAPH 2: Interaction Duration */}
+        <Card size="sm" className="glass flex flex-col h-full">
+          <CardHeader className="shrink-0 flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-lg text-zinc-900">Interaction Duration</CardTitle>
+              <p className="text-xs text-zinc-500 mt-1">Interaction duration across sessions</p>
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1 min-h-0 relative">
+            {!isMounted || !data.interactionDurationData || data.interactionDurationData.length === 0 ? (
+              <div className="w-full h-full flex flex-col items-center justify-center text-zinc-400">
+                <Activity className="w-8 h-8 mb-2 opacity-50" />
+                <p className="text-sm">No interaction duration data available yet</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={data.interactionDurationData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#71717a' }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#71717a' }} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                    itemStyle={{ color: '#176B9C', fontWeight: 600 }}
+                  />
+                  <Line type="monotone" dataKey="duration" stroke="#176B9C" strokeWidth={3} dot={{ r: 4, strokeWidth: 0, fill: '#176B9C' }} activeDot={{ r: 6, strokeWidth: 0, fill: '#176B9C' }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { Users, FileText, Settings, LogOut, Stethoscope } from "lucide-react";
+import { Logo } from "@/components/common/Logo";
 
 export default function ProfessionalLayout({
   children,
@@ -12,13 +13,10 @@ export default function ProfessionalLayout({
       
       {/* Professional Sidebar */}
       <aside className="w-64 flex-shrink-0 hidden md:flex flex-col bg-white border-r border-black/5 m-3 rounded-2xl shadow-sm z-10">
-        <div className="p-6 flex items-center gap-3 border-b border-black/5">
-          <div className="w-10 h-10 rounded-xl bg-brand text-white flex items-center justify-center shadow-sm">
-            <Stethoscope className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="font-bold text-lg tracking-tight text-zinc-900 block leading-none">Snowie Pro</span>
-            <span className="text-[10px] uppercase font-bold text-brand tracking-widest">Clinician Portal</span>
+        <div className="p-6 flex flex-col justify-center border-b border-black/5">
+          <Logo iconSize={32} textSize="text-lg" suffix="Pro" />
+          <div className="pl-10">
+            <span className="text-[10px] uppercase font-bold text-brand tracking-widest leading-none">Clinician Portal</span>
           </div>
         </div>
 

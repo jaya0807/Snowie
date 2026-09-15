@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { Globe, Mail, MessageCircle } from "lucide-react";
+import { Logo } from "@/components/common/Logo";
 
 export function Footer() {
   return (
@@ -9,17 +10,8 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">
           
           <div className="col-span-2 lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="text-brand-accent">
-                <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M20 35C20 35 7.5 25.8 7.5 15.6C7.5 11.734 10.634 8.6 14.5 8.6C16.634 8.6 18.634 9.5 20 11.2C21.366 9.5 23.366 8.6 25.5 8.6C29.366 8.6 32.5 11.734 32.5 15.6C32.5 25.8 20 35 20 35Z" fill="currentColor" opacity="0.8"/>
-                  <circle cx="14" cy="16" r="2" fill="white"/>
-                  <circle cx="26" cy="16" r="2" fill="white"/>
-                  <path d="M16 23C16 23 18 25 20 25C22 25 24 23 24 23" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                  <circle cx="20" cy="5" r="2.5" className="fill-warning-light"/>
-                </svg>
-              </div>
-              <span className="font-bold text-xl text-zinc-900 tracking-tight">Snowie</span>
+            <Link href="/" className="inline-block mb-4">
+              <Logo iconSize={32} textSize="text-xl" />
             </Link>
             <p className="text-zinc-500 text-sm max-w-sm mb-6 leading-relaxed">
               Empowering child development professionals with AI-driven behavioral observation and actionable insights

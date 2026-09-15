@@ -3,6 +3,7 @@
 import { Bell } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useRouter } from "next/navigation";
+import { Logo } from "@/components/common/Logo";
 
 export function Header() {
   const router = useRouter();
@@ -12,7 +13,7 @@ export function Header() {
       
       <div className="flex items-center gap-4">
         <div className="flex flex-col">
-          <span className="text-sm font-bold text-zinc-900 leading-none">Neura</span>
+          <Logo iconSize={20} textSize="text-sm" />
           <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider mt-1">Parent Dashboard</span>
         </div>
       </div>

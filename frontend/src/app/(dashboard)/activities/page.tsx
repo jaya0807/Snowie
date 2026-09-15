@@ -5,6 +5,24 @@ import { Play, Settings2, BarChart2, CheckCircle2, ShieldAlert } from "lucide-re
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
 
+const ACTIVITY_OVERRIDES: Record<string, { name: string, description: string }> = {
+  "A1": { name: "🐾 Animal Adventure", description: "Meet friendly animal characters and enjoy a fun conversation adventure." },
+  "A2": { name: "✨ Magic Mission", description: "Complete magical missions and find the right objects along the way." },
+  "A3": { name: "🏴☠️ Treasure Hunt", description: "Explore the island and find hidden treasures among the objects." },
+  "A4": { name: "🧠✨ Memory Quest", description: "Listen carefully, remember what you hear, and complete each memory challenge." },
+  "A5": { name: "😊 Feel-O-Meter", description: "Explore everyday situations and discover feelings, emotions, and kind responses." },
+  "A6": { name: "🚀 Super Challenge", description: "Take on fun challenges that become more exciting as you progress." }
+};
+
+const ACTIVITY_IMAGES: Record<string, string> = {
+  "A1": "/assets/activities/animal-adventure.jpg",
+  "A2": "/assets/activities/magic-mission.jpg",
+  "A3": "/assets/activities/treasure-hunt.jpg",
+  "A4": "/assets/activities/memory-quest.jpg",
+  "A5": "/assets/activities/feel-o-meter.jpg",
+  "A6": "/assets/activities/super-challenge.jpg",
+};
+
 export default function ActivitiesPage() {
   const router = useRouter();
   
@@ -13,15 +31,22 @@ export default function ActivitiesPage() {
   useEffect(() => {
     fetch("http://localhost:8001/api/activities")
       .then(res => res.json())
-      .then(data => setActivities(data))
+      .then(data => {
+        const updated = data.map((act: any) => ({
+          ...act,
+          name: ACTIVITY_OVERRIDES[act.id]?.name || act.name,
+          description: ACTIVITY_OVERRIDES[act.id]?.description || act.description
+        }));
+        setActivities(updated);
+      })
       .catch(err => {
         setActivities([
-          { id: "A1", name: "Natural Interaction", domain: "social", description: "Child converses with on-screen characters to assess baseline social response.", difficulty_levels: [1] },
-          { id: "A2", name: "Follow Instruction", domain: "cognitive", description: "Follow simple commands to tap specific objects on screen.", difficulty_levels: [1, 2, 3] },
-          { id: "A3", name: "Target Finding", domain: "cognitive", description: "Find specific visual targets on screen among distractors.", difficulty_levels: [1, 2, 3] },
-          { id: "A4", name: "Imitation", domain: "motor", description: "Imitate movements shown by characters on screen.", difficulty_levels: [1, 2, 3, 4, 5] },
-          { id: "A5", name: "Emotion Social", domain: "social", description: "Identify emotions from facial expressions.", difficulty_levels: [1, 2] },
-          { id: "A6", name: "Controlled Challenge", domain: "cognitive", description: "Advanced challenges under time constraints.", difficulty_levels: [1, 2] }
+          { id: "A1", name: ACTIVITY_OVERRIDES["A1"].name, domain: "social", description: ACTIVITY_OVERRIDES["A1"].description, difficulty_levels: [1] },
+          { id: "A2", name: ACTIVITY_OVERRIDES["A2"].name, domain: "cognitive", description: ACTIVITY_OVERRIDES["A2"].description, difficulty_levels: [1, 2, 3] },
+          { id: "A3", name: ACTIVITY_OVERRIDES["A3"].name, domain: "cognitive", description: ACTIVITY_OVERRIDES["A3"].description, difficulty_levels: [1, 2, 3] },
+          { id: "A4", name: ACTIVITY_OVERRIDES["A4"].name, domain: "motor", description: ACTIVITY_OVERRIDES["A4"].description, difficulty_levels: [1, 2, 3, 4, 5] },
+          { id: "A5", name: ACTIVITY_OVERRIDES["A5"].name, domain: "social", description: ACTIVITY_OVERRIDES["A5"].description, difficulty_levels: [1, 2] },
+          { id: "A6", name: ACTIVITY_OVERRIDES["A6"].name, domain: "cognitive", description: ACTIVITY_OVERRIDES["A6"].description, difficulty_levels: [1, 2] }
         ]);
       });
   }, []);
@@ -46,20 +71,28 @@ export default function ActivitiesPage() {
           {activities.map((act) => (
             <div key={act.id} className="glass flex flex-col overflow-hidden group hover:shadow-xl hover:shadow-brand/5 transition-all duration-300">
               
-              <div className="h-32 bg-gradient-to-br from-brand-surface to-white relative flex items-center justify-center border-b border-black/5 p-6">
-                <div className="absolute top-4 left-4">
-                  <Badge variant="outline" className="bg-white/80 backdrop-blur text-[10px] text-brand border-brand/20 font-bold uppercase tracking-wider">
+              <div className="h-40 relative flex items-center justify-center border-b border-black/5 overflow-hidden">
+                {ACTIVITY_IMAGES[act.id] ? (
+                  <img src={ACTIVITY_IMAGES[act.id]} alt={act.name} className="absolute inset-0 w-full h-full object-cover z-0" />
+                ) : (
+                  <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-brand-surface to-white z-0" />
+                )}
+                
+                <div className="absolute inset-0 bg-black/5 z-0" />
+
+                <div className="absolute top-4 left-4 z-10">
+                  <Badge variant="outline" className="bg-white/90 backdrop-blur text-[10px] text-brand border-none font-bold uppercase tracking-wider shadow-sm">
                     {act.domain.replace("_", " ")}
                   </Badge>
                 </div>
-                <div className="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center border border-black/5 group-hover:scale-110 transition-transform">
+                <div className="relative z-10 w-16 h-16 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center border border-white/50 group-hover:scale-110 group-hover:bg-white transition-all">
                   <Play className="w-6 h-6 text-brand ml-1" />
                 </div>
               </div>
 
               <div className="p-5 flex-1 flex flex-col">
                 <div className="mb-2">
-                  <h3 className="font-bold text-lg text-zinc-900 group-hover:text-brand transition-colors">{act.id}: {act.name}</h3>
+                  <h3 className="font-bold text-lg text-zinc-900 group-hover:text-brand transition-colors">{act.id} — {act.name}</h3>
                 </div>
                 
                 <p className="text-sm text-zinc-500 line-clamp-2 flex-1 leading-relaxed">
