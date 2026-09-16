@@ -54,6 +54,13 @@ return (
         
         {/* Left Column - List */}
         <div className="space-y-3 overflow-y-auto pr-2">
+          {reports.length === 0 && (
+            <div className="p-8 text-center text-zinc-500 bg-white rounded-xl border border-black/5">
+              <FileText className="w-8 h-8 mx-auto mb-3 opacity-20" />
+              <p className="text-sm">No reports available.</p>
+              <p className="text-xs mt-1 opacity-70">Complete an activity session to generate AI reports.</p>
+            </div>
+          )}
           {reports.map((report) => (
             <div 
               key={report.id} 
@@ -100,7 +107,13 @@ return (
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto bg-zinc-50/50 p-6">
-            {!reportDetails ? (
+            {reports.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-zinc-500">
+                <BrainCircuit className="w-16 h-16 mb-4 opacity-20" />
+                <h3 className="font-semibold text-zinc-700">Awaiting Session Data</h3>
+                <p className="text-sm mt-2 max-w-sm text-center">Snowie's AI engine will automatically generate clinical reports here once you complete a live session.</p>
+              </div>
+            ) : !reportDetails ? (
               <div className="h-full flex flex-col items-center justify-center text-zinc-500">
                 <FileText className="w-12 h-12 mb-4 opacity-20 animate-pulse" />
                 <p>Generating evidence-backed report...</p>

@@ -55,6 +55,16 @@ class Database:
                     status TEXT
                 )
             ''')
+            cursor.execute('''\n                CREATE TABLE IF NOT EXISTS telemetry (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id TEXT,
+                    timestamp TEXT,
+                    pitch REAL,
+                    yaw REAL,
+                    roll REAL,
+                    status TEXT
+                )
+            ''')
             conn.commit()
 
     def add_participant(self, participant_id, name=None, age=None, created_at=None):
@@ -116,3 +126,32 @@ class Database:
                 ORDER BY start_time ASC
             ''', (participant_id, activity_id))
             return [dict(row) for row in cursor.fetchall()]
+
+    def insert_telemetry(self, session_id: str, timestamp: str, pitch: float, yaw: float, roll: float, status: str):
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO telemetry (session_id, timestamp, pitch, yaw, roll, status)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (session_id, timestamp, pitch, yaw, roll, status))
+            conn.commit()
+
+    def get_telemetry_summary(self, session_id: str):
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute('''SELECT * FROM telemetry WHERE session_id = ? ORDER BY timestamp DESC''', (session_id,))
+            rows = cursor.fetchall()
+            if not rows:
+                return None
+            
+            avoidance_count = sum(1 for r in rows if "Avoidance" in r["status"])
+            focused_count = sum(1 for r in rows if "Focused" in r["status"])
+            total = len(rows)
+            focus_percent = int((focused_count / total) * 100) if total > 0 else 0
+            
+            return {
+                "total_points": total,
+                "avoidance_events": avoidance_count,
+                "focus_percent": focus_percent
+            }

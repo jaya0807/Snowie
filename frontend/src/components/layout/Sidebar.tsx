@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { Logo } from "@/components/common/Logo";
 import { usePathname } from "next/navigation";
-import { Activity, LayoutDashboard, Users, FileText, Settings, ClipboardList, Target, Sprout, TrendingUp } from "lucide-react";
+import { Camera, Activity, LayoutDashboard, Users, FileText, Settings, ClipboardList, Target, Sprout, TrendingUp } from "lucide-react";
 
 function NavItem({ href, icon: Icon, label }: { href: string, icon: any, label: string }) {
   const pathname = usePathname();
@@ -25,11 +26,8 @@ export function Sidebar() {
 
   return (
     <aside className="w-56 flex-shrink-0 hidden md:flex flex-col bg-white border-r border-black/5 m-3 rounded-lg z-10 shadow-[0_4px_14px_0_rgba(23,107,156,0.12),0_2px_4px_0_rgba(23,107,156,0.06)]">
-      <div className="p-5 flex items-center gap-3 border-b border-black/5">
-        <div className="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center font-bold text-xs shadow-sm">
-          AI
-        </div>
-        <span className="font-semibold text-sm tracking-widest text-zinc-900">OBSERVE</span>
+      <div className="p-5 flex items-center border-b border-black/5">
+        <Logo iconSize={24} textSize="text-xl" />
       </div>
 
       <nav className="flex-1 p-3 space-y-6 overflow-y-auto">
@@ -59,6 +57,7 @@ export function Sidebar() {
           <div className="space-y-1.5">
             <NavItem href="/track" icon={TrendingUp} label="Progress Trends" />
             <NavItem href="/reports" icon={FileText} label="AI Reports" />
+            <NavItem href="/calibration" icon={Camera} label="Camera Setup" />
           </div>
         </div>
 

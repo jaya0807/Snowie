@@ -14,8 +14,8 @@ export default function TrackPage() {
         if (resData.history && Array.isArray(resData.history) && resData.history.length > 0) {
           setData(resData.history.map((d: any) => ({
             session: d.session_id || `S${d.id || '?'}`,
-            latency: d.response_time_sec || d.latency || 0,
-            duration: d.interaction_duration_sec || d.duration || 0
+            latency: d.response_time_sec ?? d.latency ?? null,
+            duration: d.interaction_duration_sec ?? d.duration ?? null
           })));
         }
         setLoading(false);
@@ -56,8 +56,8 @@ export default function TrackPage() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" />
-                    <XAxis dataKey="session" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#71717a' }} dy={10} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#71717a' }} />
+                    <XAxis dataKey="session" axisLine={{ stroke: '#e4e4e7' }} tickLine={{ stroke: '#e4e4e7' }} tick={{ fontSize: 12, fill: '#71717a' }} dy={10} />
+                    <YAxis domain={[0, 100]} axisLine={{ stroke: '#e4e4e7' }} tickLine={{ stroke: '#e4e4e7' }} tick={{ fontSize: 12, fill: '#71717a' }} />
                     <Tooltip 
                       contentStyle={{ borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                       itemStyle={{ color: '#F59E0B', fontWeight: 600 }}
@@ -90,8 +90,8 @@ export default function TrackPage() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" />
-                    <XAxis dataKey="session" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#71717a' }} dy={10} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#71717a' }} />
+                    <XAxis dataKey="session" axisLine={{ stroke: '#e4e4e7' }} tickLine={{ stroke: '#e4e4e7' }} tick={{ fontSize: 12, fill: '#71717a' }} dy={10} />
+                    <YAxis domain={[0, 10]} axisLine={{ stroke: '#e4e4e7' }} tickLine={{ stroke: '#e4e4e7' }} tick={{ fontSize: 12, fill: '#71717a' }} />
                     <Tooltip 
                       contentStyle={{ borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                       itemStyle={{ color: '#176B9C', fontWeight: 600 }}

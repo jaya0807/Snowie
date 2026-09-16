@@ -6,7 +6,7 @@ import { Activity, Brain, Clock, Target, ArrowUpRight, ArrowDownRight, Eye } fro
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
 } from "recharts";
 
 export default function DashboardHome() {
@@ -52,9 +52,9 @@ export default function DashboardHome() {
 
   const statsList = [
     { label: data.stats?.totalSessions?.label || "Total Sessions", value: data.stats?.totalSessions?.value || "0", icon: Activity, trend: data.stats?.totalSessions?.trend, isPositive: data.stats?.totalSessions?.isPositive },
-    { label: data.stats?.headOrientation?.label || "Head Orientation", value: data.stats?.headOrientation?.value || "—", icon: Brain, trend: data.stats?.headOrientation?.trend, isPositive: data.stats?.headOrientation?.isPositive },
+    { label: data.stats?.headOrientation?.label || "Posture Stability", value: data.stats?.headOrientation?.value || "—", icon: Brain, trend: data.stats?.headOrientation?.trend, isPositive: data.stats?.headOrientation?.isPositive },
     { label: data.stats?.bodyMovement?.label || "Body Movement", value: data.stats?.bodyMovement?.value || "—", icon: Activity, handFlapping: data.stats?.bodyMovement?.handFlapping || "—", repeatedMovements: data.stats?.bodyMovement?.repeatedMovements || "—" },
-    { label: data.stats?.eyeTracking?.label || "Eye Tracking", value: data.stats?.eyeTracking?.value || "—", icon: Target, trend: data.stats?.eyeTracking?.trend, isPositive: data.stats?.eyeTracking?.isPositive },
+    { label: data.stats?.eyeTracking?.label || "Visual Focus", value: data.stats?.eyeTracking?.value || "—", icon: Target, trend: data.stats?.eyeTracking?.trend, isPositive: data.stats?.eyeTracking?.isPositive },
   ];
 
   return (
@@ -75,20 +75,19 @@ export default function DashboardHome() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 shrink-0">
         {statsList.map((stat, i) => (
-          <Card key={i} className="glass group hover:bg-white transition-all duration-300 relative overflow-hidden">
+          <Card key={i} className="glass group hover:bg-white transition-all duration-300 relative overflow-hidden flex flex-col">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
               <CardTitle className="text-sm font-semibold text-zinc-600">{stat.label}</CardTitle>
               <div className="p-2 bg-brand/5 rounded-lg border border-brand/10">
                 <stat.icon className="w-4 h-4 text-brand" />
               </div>
             </CardHeader>
-            <CardContent className="relative z-10">
+            <CardContent className="relative z-10 flex-1 flex flex-col">
               <div className="text-3xl font-black text-zinc-900 tracking-tight">{stat.value}</div>
               
               {stat.label === "Body Movement" ? (
                 <>
-                  <div className="mt-3" />
-                  <div className="flex items-center text-xs text-zinc-600">
+                  <div className="mt-auto pt-3 flex items-center text-xs text-zinc-600 w-full">
                     <div className="flex flex-col flex-1">
                       <span>Hand Flapping</span>
                       <span className="font-medium mt-0.5">{stat.handFlapping}</span>
@@ -101,7 +100,7 @@ export default function DashboardHome() {
                   </div>
                 </>
               ) : stat.trend && stat.trend !== 'Nil' && stat.trend !== '-' ? (
-                <p className={`text-xs mt-2 font-medium flex items-center gap-1 ${stat.isPositive ? 'text-brand' : 'text-zinc-500'}`}>
+                <p className={`text-xs mt-auto pt-4 font-medium flex items-center gap-1 ${stat.isPositive ? 'text-brand' : 'text-zinc-500'}`}>
                   {stat.isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                   {stat.trend}
                 </p>
@@ -130,8 +129,9 @@ export default function DashboardHome() {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data.responseLatencyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#71717a' }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#71717a' }} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" opacity={0.5} />
+                  <XAxis dataKey="name" axisLine={{ stroke: '#e4e4e7' }} tickLine={{ stroke: '#e4e4e7' }} tick={{ fontSize: 12, fill: '#71717a' }} dy={10} />
+                  <YAxis domain={[0, 5]} axisLine={{ stroke: '#e4e4e7' }} tickLine={{ stroke: '#e4e4e7' }} tick={{ fontSize: 12, fill: '#71717a' }} />
                   <Tooltip 
                     contentStyle={{ borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                     itemStyle={{ color: '#176B9C', fontWeight: 600 }}
@@ -160,8 +160,9 @@ export default function DashboardHome() {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data.interactionDurationData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#71717a' }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#71717a' }} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" opacity={0.5} />
+                  <XAxis dataKey="name" axisLine={{ stroke: '#e4e4e7' }} tickLine={{ stroke: '#e4e4e7' }} tick={{ fontSize: 12, fill: '#71717a' }} dy={10} />
+                  <YAxis domain={[0, 30]} axisLine={{ stroke: '#e4e4e7' }} tickLine={{ stroke: '#e4e4e7' }} tick={{ fontSize: 12, fill: '#71717a' }} />
                   <Tooltip 
                     contentStyle={{ borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                     itemStyle={{ color: '#176B9C', fontWeight: 600 }}

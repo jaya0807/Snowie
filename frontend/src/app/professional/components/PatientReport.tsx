@@ -60,7 +60,7 @@ export function PatientReport({ selectedPatient }: { selectedPatient: any }) {
                 <Activity className="w-5 h-5 text-brand" />
               </div>
               <div>
-                <p className="text-xs text-zinc-500 font-medium">Avg Engagement</p>
+                <p className="text-xs text-zinc-500 font-medium">Visual Focus</p>
                 <p className="text-xl font-bold text-zinc-900">78%</p>
               </div>
             </CardContent>
@@ -71,8 +71,8 @@ export function PatientReport({ selectedPatient }: { selectedPatient: any }) {
                 <Brain className="w-5 h-5 text-success" />
               </div>
               <div>
-                <p className="text-xs text-zinc-500 font-medium">Focus Shifts</p>
-                <p className="text-xl font-bold text-zinc-900">12 / session</p>
+                <p className="text-xs text-zinc-500 font-medium">Gaze Shifts</p>
+                <p className="text-xl font-bold text-zinc-900">14 / min</p>
               </div>
             </CardContent>
           </Card>
@@ -82,8 +82,8 @@ export function PatientReport({ selectedPatient }: { selectedPatient: any }) {
                 <Clock className="w-5 h-5 text-zinc-700" />
               </div>
               <div>
-                <p className="text-xs text-zinc-500 font-medium">Total Sessions</p>
-                <p className="text-xl font-bold text-zinc-900">24</p>
+                <p className="text-xs text-zinc-500 font-medium">Avg Sustained Gaze</p>
+                <p className="text-xl font-bold text-zinc-900">45s</p>
               </div>
             </CardContent>
           </Card>

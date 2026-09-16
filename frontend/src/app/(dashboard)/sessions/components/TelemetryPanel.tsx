@@ -7,7 +7,7 @@ export function TelemetryPanel({ sessionActive, telemetry }: { sessionActive: bo
     <Card className="border-0 shadow-sm bg-zinc-50 border border-black/5">
       <CardHeader className="pb-3 border-b border-black/5">
         <CardTitle className="text-sm font-bold flex items-center justify-between">
-          <span>Real-time Telemetry</span>
+          <span>Live Focus Tracking</span>
           <Activity className={`w-4 h-4 ${sessionActive ? "text-brand animate-pulse" : "text-zinc-300"}`} />
         </CardTitle>
       </CardHeader>
