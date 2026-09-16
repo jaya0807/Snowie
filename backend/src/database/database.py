@@ -105,6 +105,15 @@ class Database:
             ''', (end_time, accuracy, response_time_sec, session_id))
             conn.commit()
             
+    def insert_event(self, session_id, event_time, event_type, difficulty, accuracy, target, status):
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO events (session_id, event_time, event_type, difficulty, accuracy, target, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (session_id, event_time, event_type, difficulty, accuracy, target, status))
+            conn.commit()
+
     def get_recent_sessions(self, participant_id, limit=5):
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row

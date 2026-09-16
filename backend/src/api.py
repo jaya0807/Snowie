@@ -21,6 +21,7 @@ async def websocket_capture(websocket: WebSocket, session_id: str):
     import time
     db = Database(DB_PATH)
     try:
+        consecutive_distracted = 0
         while True:
             data = await websocket.receive_text()
             payload = json.loads(data)
@@ -38,6 +39,18 @@ async def websocket_capture(websocket: WebSocket, session_id: str):
                 roll=0,
                 status=status
             )
+            
+            # Phase 2: Real-Time Telemetry Analysis (Anomaly Detection)
+            is_distracted = status == "Distracted" or abs(yaw) > 25 or abs(pitch) > 20
+            if is_distracted:
+                consecutive_distracted += 1
+            else:
+                consecutive_distracted = 0
+                
+            # If distracted for 5 frames (approx 2.5 seconds at 2fps), log a clinical event
+            if consecutive_distracted == 5:
+                db.insert_event(session_id, time.time(), "GAZE_AVERSION", "HIGH", 0.0, "Webcam", "Logged")
+                consecutive_distracted = 0 # reset to prevent spam
             # You could also broadcast this to the parent monitor here
     except WebSocketDisconnect:
         print(f"Capture stream disconnected for {session_id}")
@@ -278,36 +291,60 @@ from reporting.report_templates import ReportTemplates
 
 @app.get("/api/reports/{report_id}")
 def get_report_detail(report_id: str):
-    # Initialize engines
+    from database.database import Database
+    import sqlite3
+    db = Database(DB_PATH)
+    
+    session_id = report_id.replace("R-", "")
+    
+    with sqlite3.connect(db.db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT * FROM sessions WHERE session_id = ?", (session_id,))
+        session = cursor.fetchone()
+        
+        cursor.execute("SELECT * FROM events WHERE session_id = ?", (session_id,))
+        events = [dict(r) for r in cursor.fetchall()]
+        
+        cursor.execute("SELECT COUNT(*) FROM telemetry WHERE session_id = ?", (session_id,))
+        telemetry_count = cursor.fetchone()[0]
+        
     evidence = EvidenceEngine()
+    insight = evidence.analyze_repetition_context(events)
     
-    # Mocking a repeated movement event to trigger the evidence engine
-    mock_events = [
-        {"event_type": "REPEATED_MOVEMENT", "difficulty": "HIGH"},
-        {"event_type": "REPEATED_MOVEMENT", "difficulty": "HIGH"},
-        {"event_type": "REPEATED_MOVEMENT", "difficulty": "HIGH"},
-        {"event_type": "REPEATED_MOVEMENT", "difficulty": "LOW"}
-    ]
-    
-    insight = evidence.analyze_repetition_context(mock_events)
-    
-    # Use the mandated MVP report template
     report_content = ReportTemplates.get_empty_template()
     
-    report_content["1_session_overview"]["content"] = f"24-minute session completed for {report_id}. 5 out of 6 assigned activities were completed."
-    report_content["2_domain_observations"]["content"] = "Accuracy on multi-step instructions was 67%."
-    report_content["3_key_events"]["content"] = f"Event 1: 4 repetitive cycles identified at 01:24."
+    if not session:
+        report_content["1_session_overview"]["content"] = "Session data not found."
+        return {"id": report_id, "sections": report_content}
+        
+    # Phase 3: Dynamic AI Report Generation using real DB data
+    acc = session.get("accuracy")
+    acc_str = f"{int(acc*100)}%" if acc is not None else "N/A"
+    dur = session.get("response_time_sec")
     
-    # Inject the strictly validated evidence insight here!
+    report_content["1_session_overview"]["content"] = f"Session {session_id} completed. Child achieved {acc_str} accuracy during activity {session.get('activity_id')}."
+    report_content["2_domain_observations"]["content"] = f"Average response latency was {dur} seconds. The system captured {telemetry_count} telemetry frames."
+    
+    gaze_aversions = [e for e in events if e.get("event_type") == "GAZE_AVERSION"]
+    
+    if gaze_aversions:
+        report_content["3_key_events"]["content"] = f"Identified {len(gaze_aversions)} Gaze Aversion event(s) during gameplay."
+    else:
+        report_content["3_key_events"]["content"] = "Child maintained excellent visual focus. No major gaze aversions detected."
+    
     if insight:
         report_content["4_contextual_patterns"]["content"] = (
             f"{insight['statement']} "
             f"Evidence: {insight['evidence']['total_events']} total events recorded. "
             f"({insight['evidence']['high_demand_events']} in High Demand)."
         )
+    else:
+        report_content["4_contextual_patterns"]["content"] = "No repetitive movement patterns were observed in this session."
     
-    report_content["5_longitudinal_trends"]["content"] = "Accuracy has improved by 15% across the last 3 sessions."
-    report_content["6_professional_review"]["content"] = "Reviewer Notes: Pattern matches caregiver observations."
+    report_content["5_longitudinal_trends"]["content"] = "Awaiting sufficient data to calculate longitudinal trend across sessions."
+    report_content["6_professional_review"]["content"] = "Reviewer Notes: Pending clinical review."
     
     return {"id": report_id, "sections": report_content}
 
@@ -579,4 +616,67 @@ def parent_login_endpoint(data: ParentLoginRequest):
 @app.post("/api/auth/logout")
 def logout_endpoint():
     return {"status": "success", "message": "Logged out successfully"}
+
+
+import uuid
+import time
+from pydantic import BaseModel
+from typing import Optional
+
+class StartSessionReq(BaseModel):
+    participant_id: str = "P1"
+    activity_id: str
+    difficulty: int = 1
+
+class LogEventReq(BaseModel):
+    event_type: str
+    difficulty: str
+    accuracy: float
+    target: str = ""
+    status: str = "logged"
+
+class EndSessionReq(BaseModel):
+    accuracy: float
+    response_time_sec: float
+
+@app.post("/api/sessions/start")
+def api_start_session(req: StartSessionReq):
+    session_id = f"S-{uuid.uuid4().hex[:8]}"
+    start_time = time.time()
+    
+    from database.database import Database
+    db = Database(DB_PATH)
+    db.start_session(session_id, req.participant_id, start_time, req.activity_id, req.difficulty)
+    return {"session_id": session_id, "start_time": start_time}
+
+@app.post("/api/sessions/{session_id}/events")
+def api_log_event(session_id: str, req: LogEventReq):
+    from database.database import Database
+    db = Database(DB_PATH)
+    event_time = time.time()
+    db.insert_event(session_id, event_time, req.event_type, req.difficulty, req.accuracy, req.target, req.status)
+    return {"status": "event_logged"}
+
+@app.post("/api/sessions/{session_id}/end")
+def api_end_session(session_id: str, req: EndSessionReq):
+    import sqlite3
+    from database.database import Database
+    db = Database(DB_PATH)
+    end_time = time.time()
+    db.end_session(session_id, end_time, req.accuracy, req.response_time_sec)
+    
+    # Phase 4: Dynamic Goal Progression
+    with sqlite3.connect(db.db_path) as conn:
+        cursor = conn.cursor()
+        
+        # If accuracy is very high, auto-update the relevant goal's baseline
+        if req.accuracy >= 0.7:
+            cursor.execute('''
+                UPDATE goals 
+                SET baseline = '70% (Recently improved!)' 
+                WHERE domain = 'Instruction Following' AND participant_id = 'P1'
+            ''')
+            conn.commit()
+            
+    return {"status": "session_ended", "session_id": session_id}
 
