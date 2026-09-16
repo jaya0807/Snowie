@@ -357,16 +357,7 @@ export default function CalibrationPage() {
               </div>
             </div>
 
-            <div className="bg-brand/5 border border-brand/20 p-4 rounded-xl">
-              <p className="text-xs font-bold text-brand mb-2">System Data Payload</p>
-              <pre className="text-[10px] font-mono text-zinc-600 bg-white p-3 rounded border border-black/5 overflow-x-auto">
-{JSON.stringify({
-  timestamp: Date.now(),
-  patient_id: "P1",
-  metrics: telemetry
-}, null, 2)}
-              </pre>
-            </div>
+            
 
           </CardContent>
         </Card>

@@ -57,7 +57,7 @@ export function Sidebar() {
           <div className="space-y-1.5">
             <NavItem href="/track" icon={TrendingUp} label="Progress Trends" />
             <NavItem href="/reports" icon={FileText} label="AI Reports" />
-            <NavItem href="/calibration" icon={Camera} label="Camera Setup" />
+            
           </div>
         </div>
 

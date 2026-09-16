@@ -22,35 +22,71 @@ async def websocket_capture(websocket: WebSocket, session_id: str):
     db = Database(DB_PATH)
     try:
         consecutive_distracted = 0
+        consecutive_unstable = 0
         while True:
             data = await websocket.receive_text()
             payload = json.loads(data)
             metrics = payload.get("metrics", {})
-            pitch = metrics.get("pitch", 0)
-            yaw = metrics.get("yaw", 0)
+            pitch = metrics.get("pitch", 0) or 0
+            yaw = metrics.get("yaw", 0) or 0
+            ear = metrics.get("ear", 0) or 0
+            blinks = metrics.get("blinks", 0) or 0
+            aversions = metrics.get("aversions", 0) or 0
+            flapping_events = metrics.get("flappingEvents", 0) or 0
+            posture_stable = metrics.get("postureStable", 1)
             status = metrics.get("status", "Unknown")
             
-            # Save to database
+            # Save full telemetry to database
             db.insert_telemetry(
                 session_id=session_id,
-                timestamp=str(time.time()),
+                timestamp=time.time(),
                 pitch=pitch,
                 yaw=yaw,
                 roll=0,
-                status=status
+                status=status,
+                ear=ear,
+                blinks=blinks,
+                aversions=aversions,
+                flapping_events=flapping_events,
+                posture_stable=1 if posture_stable else 0
             )
             
-            # Phase 2: Real-Time Telemetry Analysis (Anomaly Detection)
-            is_distracted = status == "Distracted" or abs(yaw) > 25 or abs(pitch) > 20
+            # Anomaly Detection: Gaze Aversion
+            is_distracted = "Distracted" in status or "Avoidance" in status
             if is_distracted:
                 consecutive_distracted += 1
             else:
                 consecutive_distracted = 0
-                
-            # If distracted for 5 frames (approx 2.5 seconds at 2fps), log a clinical event
             if consecutive_distracted == 5:
-                db.insert_event(session_id, time.time(), "GAZE_AVERSION", "HIGH", 0.0, "Webcam", "Logged")
-                consecutive_distracted = 0 # reset to prevent spam
+                db.insert_event(session_id, time.time(), "GAZE_AVERSION", "HIGH",
+                                f"Yaw={yaw:.1f}, Pitch={pitch:.1f}")
+                consecutive_distracted = 0
+
+            # Anomaly Detection: Posture Instability
+            if not posture_stable:
+                consecutive_unstable += 1
+            else:
+                consecutive_unstable = 0
+            if consecutive_unstable == 6:  # ~3 seconds
+                db.insert_event(session_id, time.time(), "POSTURE_UNSTABLE", "MEDIUM",
+                                "Head position unstable for 3+ seconds")
+                consecutive_unstable = 0
+
+            # Anomaly Detection: Hand Flapping (frontend already debounces, just log once per detection)
+            if metrics.get("newFlap", False):
+                db.insert_event(session_id, time.time(), "HAND_FLAPPING", "HIGH",
+                                "Rapid wrist oscillation detected by MediaPipe Pose")
+                
+            # Broadcast live to parent monitor
+            try:
+                msg = {
+                    "type": "telemetry",
+                    "metrics": metrics,
+                    "session_id": session_id
+                }
+                await manager.broadcast(json.dumps(msg))
+            except Exception as e:
+                print(f"Broadcast error: {e}")
             # You could also broadcast this to the parent monitor here
     except WebSocketDisconnect:
         print(f"Capture stream disconnected for {session_id}")

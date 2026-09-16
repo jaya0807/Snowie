@@ -2,6 +2,7 @@ import sqlite3
 from typing import List
 import uuid
 import json
+import time as _time
 
 class Database:
     def __init__(self, db_path: str = "observe.db"):
@@ -31,16 +32,15 @@ class Database:
                     response_time_sec REAL
                 )
             ''')
+            # Unified clinical events table (fixed schema)
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS events (
                     event_id TEXT PRIMARY KEY,
                     session_id TEXT,
-                    timestamp TEXT,
+                    timestamp REAL,
                     event_type TEXT,
-                    duration REAL,
-                    body_region TEXT,
-                    confidence REAL,
-                    context TEXT,
+                    severity TEXT DEFAULT 'MEDIUM',
+                    details TEXT DEFAULT '',
                     FOREIGN KEY (session_id) REFERENCES sessions (session_id)
                 )
             ''')
@@ -55,17 +55,43 @@ class Database:
                     status TEXT
                 )
             ''')
-            cursor.execute('''\n                CREATE TABLE IF NOT EXISTS telemetry (
+            # Expanded telemetry table with all 6 metrics + posture
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS telemetry (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     session_id TEXT,
-                    timestamp TEXT,
+                    timestamp REAL,
                     pitch REAL,
                     yaw REAL,
                     roll REAL,
+                    ear REAL DEFAULT 0,
+                    blinks INTEGER DEFAULT 0,
+                    aversions INTEGER DEFAULT 0,
+                    flapping_events INTEGER DEFAULT 0,
+                    posture_stable INTEGER DEFAULT 1,
                     status TEXT
                 )
             ''')
             conn.commit()
+
+            # Migrate existing telemetry table if columns are missing
+            try:
+                cursor.execute("ALTER TABLE telemetry ADD COLUMN ear REAL DEFAULT 0")
+                cursor.execute("ALTER TABLE telemetry ADD COLUMN blinks INTEGER DEFAULT 0")
+                cursor.execute("ALTER TABLE telemetry ADD COLUMN aversions INTEGER DEFAULT 0")
+                cursor.execute("ALTER TABLE telemetry ADD COLUMN flapping_events INTEGER DEFAULT 0")
+                cursor.execute("ALTER TABLE telemetry ADD COLUMN posture_stable INTEGER DEFAULT 1")
+                conn.commit()
+            except Exception:
+                pass  # Columns already exist
+
+            # Migrate events table if using old schema
+            try:
+                cursor.execute("ALTER TABLE events ADD COLUMN severity TEXT DEFAULT 'MEDIUM'")
+                cursor.execute("ALTER TABLE events ADD COLUMN details TEXT DEFAULT ''")
+                conn.commit()
+            except Exception:
+                pass
 
     def add_participant(self, participant_id, name=None, age=None, created_at=None):
         if hasattr(participant_id, "participant_id"):
@@ -104,14 +130,30 @@ class Database:
                 WHERE session_id = ?
             ''', (end_time, accuracy, response_time_sec, session_id))
             conn.commit()
-            
-    def insert_event(self, session_id, event_time, event_type, difficulty, accuracy, target, status):
+
+    def insert_event(self, session_id: str, timestamp: float, event_type: str,
+                     severity: str = "MEDIUM", details: str = ""):
+        """Insert a clinical event. Unified schema."""
+        event_id = str(uuid.uuid4())
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO events (session_id, event_time, event_type, difficulty, accuracy, target, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (session_id, event_time, event_type, difficulty, accuracy, target, status))
+                INSERT INTO events (event_id, session_id, timestamp, event_type, severity, details)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (event_id, session_id, timestamp, event_type, severity, details))
+            conn.commit()
+
+    def insert_telemetry(self, session_id: str, timestamp: float, pitch: float, yaw: float,
+                         roll: float, status: str, ear: float = 0, blinks: int = 0,
+                         aversions: int = 0, flapping_events: int = 0, posture_stable: int = 1):
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO telemetry (session_id, timestamp, pitch, yaw, roll, ear, blinks,
+                                       aversions, flapping_events, posture_stable, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (session_id, timestamp, pitch, yaw, roll, ear, blinks,
+                  aversions, flapping_events, posture_stable, status))
             conn.commit()
 
     def get_recent_sessions(self, participant_id, limit=5):
@@ -136,15 +178,6 @@ class Database:
             ''', (participant_id, activity_id))
             return [dict(row) for row in cursor.fetchall()]
 
-    def insert_telemetry(self, session_id: str, timestamp: str, pitch: float, yaw: float, roll: float, status: str):
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT INTO telemetry (session_id, timestamp, pitch, yaw, roll, status)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (session_id, timestamp, pitch, yaw, roll, status))
-            conn.commit()
-
     def get_telemetry_summary(self, session_id: str):
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
@@ -154,13 +187,25 @@ class Database:
             if not rows:
                 return None
             
-            avoidance_count = sum(1 for r in rows if "Avoidance" in r["status"])
-            focused_count = sum(1 for r in rows if "Focused" in r["status"])
+            avoidance_count = sum(1 for r in rows if r["status"] and "Avoidance" in r["status"])
+            distracted_count = sum(1 for r in rows if r["status"] and "Distracted" in r["status"])
+            focused_count = sum(1 for r in rows if r["status"] and "Focused" in r["status"])
             total = len(rows)
             focus_percent = int((focused_count / total) * 100) if total > 0 else 0
             
             return {
                 "total_points": total,
                 "avoidance_events": avoidance_count,
-                "focus_percent": focus_percent
+                "distracted_events": distracted_count,
+                "focus_percent": focus_percent,
+                "max_aversions": max((r["aversions"] or 0) for r in rows),
+                "max_blinks": max((r["blinks"] or 0) for r in rows),
+                "max_flapping": max((r["flapping_events"] or 0) for r in rows),
             }
+
+    def get_events_for_session(self, session_id: str):
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute('''SELECT * FROM events WHERE session_id = ? ORDER BY timestamp''', (session_id,))
+            return [dict(row) for row in cursor.fetchall()]
