@@ -169,8 +169,8 @@ export default function CalibrationPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto h-full overflow-auto">
-      <Script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" strategy="beforeInteractive" />
-      <Script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" strategy="beforeInteractive" />
+      <Script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" strategy="afterInteractive" crossOrigin="anonymous" />
+      <Script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" strategy="afterInteractive" crossOrigin="anonymous" />
 
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Camera Setup & Testing</h1>
