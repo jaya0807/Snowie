@@ -82,7 +82,8 @@ async def websocket_capture(websocket: WebSocket, session_id: str):
                 msg = {
                     "type": "telemetry",
                     "metrics": metrics,
-                    "session_id": session_id
+                    "session_id": session_id,
+                    "image": payload.get("image")
                 }
                 await manager.broadcast(json.dumps(msg))
             except Exception as e:
