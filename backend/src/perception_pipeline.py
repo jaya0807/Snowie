@@ -7,6 +7,8 @@ from perception.face_detector import FaceDetector
 from features.movement_features import MovementFeatureExtractor
 from features.head_features import HeadFeatureExtractor
 from features.engagement_features import EngagementFeatureExtractor
+from perception.hand_detector import HandDetector
+from features.stimming_features import StimmingFeatureExtractor
 
 class PerceptionPipeline:
     def __init__(self):
@@ -15,6 +17,8 @@ class PerceptionPipeline:
         self.movement_extractor = MovementFeatureExtractor()
         self.head_extractor = HeadFeatureExtractor()
         self.engagement_extractor = EngagementFeatureExtractor()
+        self.hand_detector = HandDetector()
+        self.stimming_extractor = StimmingFeatureExtractor()
         
         # A4 Pose Validation State
         self.target_pose = None
@@ -86,8 +90,10 @@ class PerceptionPipeline:
         
         pose_res = self.pose_detector.process(frame, timestamp)
         face_res = self.face_detector.process(frame, timestamp)
+        hand_res = self.hand_detector.process(frame, timestamp)
         
         pose_data = pose_res.get("pose", {})
+        hands_data = hand_res.get("hands", [])
         
         # Debug every 25 frames
         self._debug_frame_count += 1
@@ -104,12 +110,14 @@ class PerceptionPipeline:
         perception_packet = {
             "timestamp": timestamp,
             "pose": pose_data,
-            "face": face_res.get("face", {})
+            "face": face_res.get("face", {}),
+            "hands": hands_data
         }
         
         move_feat = self.movement_extractor.extract(perception_packet)
         head_feat = self.head_extractor.extract(perception_packet)
         eng_feat = self.engagement_extractor.extract(perception_packet)
+        stim_feat = self.stimming_extractor.extract(perception_packet)
         
         velocity = move_feat.get("velocity", 0.0)
         orientation = face_res.get("face", {}).get("orientation", "AWAY")
@@ -129,7 +137,8 @@ class PerceptionPipeline:
                 "msg": f"Head: {orientation} | Motion: {velocity:.2f}",
                 "type": "ok" if eng_score > 50 else "warn"
             },
-            "sessionActive": True
+            "sessionActive": True,
+            "stimming": stim_feat
         }
         
         # A4 pose validation (was dead code before — early return bug fixed)

@@ -31,6 +31,10 @@ function LiveSessionContent() {
   const [logs, setLogs] = useState<{ time: string; event: string; details: string }[]>([]);
   const lastAversionRef = useRef(0);
   const lastFlapRef = useRef(0);
+  const lastRockRef = useRef(0);
+  const lastPostureRef = useRef(0);
+  const lastFlickRef = useRef(0);
+  const lastTicRef = useRef(0);
 
   // Telemetry state
   const [telemetry, setTelemetry] = useState({
@@ -39,6 +43,10 @@ function LiveSessionContent() {
     ear: 0, blinks: 0, blinkRate: "0",
     aversions: 0, irisPosition: "—",
     flappingEvents: 0,
+    bodyRockEvents: 0,
+    wristPostureEvents: 0,
+    flickingEvents: 0,
+    ticEvents: 0,
     postureStable: true,
   });
 
@@ -75,6 +83,10 @@ function LiveSessionContent() {
               aversions: m.aversions ?? 0,
               irisPosition: m.irisPosition ?? "CENTER",
               flappingEvents: m.flappingEvents ?? 0,
+              bodyRockEvents: m.bodyRockEvents ?? 0,
+              wristPostureEvents: m.wristPostureEvents ?? 0,
+              flickingEvents: m.flickingEvents ?? 0,
+              ticEvents: m.ticEvents ?? 0,
               postureStable: m.postureStable ?? true,
             };
 
@@ -108,6 +120,24 @@ function LiveSessionContent() {
                   ...prev,
                 ];
               });
+            }
+
+            // New Stimming logs
+            if (newTelemetry.bodyRockEvents > lastRockRef.current) {
+              setLogs(prev => [{ time: new Date().toLocaleTimeString(), event: "Body Rocking Detected", details: "Rhythmic torso oscillation detected." }, ...prev]);
+              lastRockRef.current = newTelemetry.bodyRockEvents;
+            }
+            if (newTelemetry.wristPostureEvents > lastPostureRef.current) {
+              setLogs(prev => [{ time: new Date().toLocaleTimeString(), event: "Wrist Posturing Detected", details: "Sustained atypical wrist elevation." }, ...prev]);
+              lastPostureRef.current = newTelemetry.wristPostureEvents;
+            }
+            if (newTelemetry.flickingEvents > lastFlickRef.current) {
+              setLogs(prev => [{ time: new Date().toLocaleTimeString(), event: "Finger Flicking Detected", details: "Repetitive finger movements near face." }, ...prev]);
+              lastFlickRef.current = newTelemetry.flickingEvents;
+            }
+            if (newTelemetry.ticEvents > lastTicRef.current) {
+              setLogs(prev => [{ time: new Date().toLocaleTimeString(), event: "Head Tic Detected", details: "Rapid involuntary head movement." }, ...prev]);
+              lastTicRef.current = newTelemetry.ticEvents;
             }
           }
         } catch (e) {
@@ -337,6 +367,58 @@ function LiveSessionContent() {
                   </div>
                 </div>
                 <p className="text-2xl font-black text-amber-600">{telemetry.flappingEvents}</p>
+              </div>
+
+              <div className="mt-2 bg-zinc-50 p-3 rounded-xl border border-black/5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-purple-100 rounded-lg">
+                    <Activity className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Motor Events</p>
+                    <p className="text-sm font-medium text-zinc-900">Body Rocking</p>
+                  </div>
+                </div>
+                <p className="text-2xl font-black text-purple-600">{telemetry.bodyRockEvents}</p>
+              </div>
+
+              <div className="mt-2 bg-zinc-50 p-3 rounded-xl border border-black/5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-indigo-100 rounded-lg">
+                    <Activity className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Motor Events</p>
+                    <p className="text-sm font-medium text-zinc-900">Wrist Posturing</p>
+                  </div>
+                </div>
+                <p className="text-2xl font-black text-indigo-600">{telemetry.wristPostureEvents}</p>
+              </div>
+
+              <div className="mt-2 bg-zinc-50 p-3 rounded-xl border border-black/5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-pink-100 rounded-lg">
+                    <Activity className="w-4 h-4 text-pink-600" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Motor Events</p>
+                    <p className="text-sm font-medium text-zinc-900">Finger Flicking</p>
+                  </div>
+                </div>
+                <p className="text-2xl font-black text-pink-600">{telemetry.flickingEvents}</p>
+              </div>
+
+              <div className="mt-2 bg-zinc-50 p-3 rounded-xl border border-black/5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-rose-100 rounded-lg">
+                    <Activity className="w-4 h-4 text-rose-600" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Motor Events</p>
+                    <p className="text-sm font-medium text-zinc-900">Head Tics</p>
+                  </div>
+                </div>
+                <p className="text-2xl font-black text-rose-600">{telemetry.ticEvents}</p>
               </div>
             </CardContent>
           </Card>

@@ -18,6 +18,7 @@ declare global {
   interface Window {
     FaceMesh: any;
     Pose: any;
+    Hands: any;
     Camera: any;
   }
 }
@@ -56,73 +57,176 @@ export default function HiddenCameraProcessor({
     sessionStartTime: 0,
     pitchHistory: [] as number[],
     yawHistory: [] as number[],
+    ticEvents: 0,
+    lastTicTime: 0,
+    newTic: false,
+    ticHistory: [] as { time: number; yaw: number; pitch: number }[],
   });
 
   const motorMetrics = useRef({
     flappingEvents: 0,
+    bodyRockEvents: 0,
+    wristPostureEvents: 0,
     lastFlapTime: 0,
+    lastRockTime: 0,
+    lastPostureTime: 0,
     newFlap: false,
-    wristHistory: [] as { time: number; ly: number; ry: number }[],
+    newRock: false,
+    newPosture: false,
+    wristHistory: [] as { time: number; ly: number; ry: number; lsX: number; lsY: number; rsX: number; rsY: number }[],
+  });
+
+  const handsMetrics = useRef({
+    flickingEvents: 0,
+    lastFlickTime: 0,
+    newFlick: false,
+    flickHistory: [] as { time: number; dist: number }[],
   });
 
   // Shared state ref so both callbacks can read it
   const latestMetrics = useRef<Record<string, any>>({});
 
   const onPoseResults = (results: any) => {
-    if (!results.poseLandmarks) return;
+    if (!results.poseLandmarks || results.poseLandmarks.length < 33) return;
     const lm = results.poseLandmarks;
     const now = Date.now();
     const motor = motorMetrics.current;
     motor.newFlap = false;
-    motor.wristHistory.push({ time: now, ly: lm[15].y, ry: lm[16].y });
+    motor.newRock = false;
+    motor.newPosture = false;
+
+    // left wrist 15, right wrist 16, left shoulder 11, right shoulder 12
+    motor.wristHistory.push({ time: now, ly: lm[15].y, ry: lm[16].y, lsX: lm[11].x, lsY: lm[11].y, rsX: lm[12].x, rsY: lm[12].y });
     motor.wristHistory = motor.wristHistory.filter((h) => now - h.time < 2000);
 
-    if (now - motor.lastFlapTime > 3000 && motor.wristHistory.length > 10) {
-      let lChanges = 0, rChanges = 0;
-      let lMin = 1, lMax = 0, rMin = 1, rMax = 0;
-      let lastLDir = 0, lastRDir = 0;
+    if (motor.wristHistory.length > 10) {
+      const history = motor.wristHistory;
 
-      for (let i = 1; i < motor.wristHistory.length; i++) {
-        const prev = motor.wristHistory[i - 1];
-        const curr = motor.wristHistory[i];
-        lMin = Math.min(lMin, curr.ly); lMax = Math.max(lMax, curr.ly);
-        rMin = Math.min(rMin, curr.ry); rMax = Math.max(rMax, curr.ry);
-        const lDir = Math.sign(curr.ly - prev.ly);
-        if (lDir !== 0 && lastLDir !== 0 && lDir !== lastLDir) lChanges++;
-        if (lDir !== 0) lastLDir = lDir;
-        const rDir = Math.sign(curr.ry - prev.ry);
-        if (rDir !== 0 && lastRDir !== 0 && rDir !== lastRDir) rChanges++;
-        if (rDir !== 0) lastRDir = rDir;
+      // 1. Hand Flapping (wrists oscillating)
+      if (now - motor.lastFlapTime > 3000) {
+        let lChanges = 0, rChanges = 0;
+        let lMin = 1, lMax = 0, rMin = 1, rMax = 0;
+        let lastLDir = 0, lastRDir = 0;
+
+        for (let i = 1; i < history.length; i++) {
+          const prev = history[i - 1];
+          const curr = history[i];
+          lMin = Math.min(lMin, curr.ly); lMax = Math.max(lMax, curr.ly);
+          rMin = Math.min(rMin, curr.ry); rMax = Math.max(rMax, curr.ry);
+          const lDir = Math.sign(curr.ly - prev.ly);
+          if (lDir !== 0 && lastLDir !== 0 && lDir !== lastLDir) lChanges++;
+          if (lDir !== 0) lastLDir = lDir;
+          const rDir = Math.sign(curr.ry - prev.ry);
+          if (rDir !== 0 && lastRDir !== 0 && rDir !== lastRDir) rChanges++;
+          if (rDir !== 0) lastRDir = rDir;
+        }
+
+        if ((lChanges >= 4 && lMax - lMin > 0.03) || (rChanges >= 4 && rMax - rMin > 0.03)) {
+          motor.flappingEvents += 1;
+          motor.lastFlapTime = now;
+          motor.newFlap = true;
+        }
       }
 
-      const isFlapping =
-        (lChanges >= 4 && lMax - lMin > 0.03) ||
-        (rChanges >= 4 && rMax - rMin > 0.03);
+      // 2. Body Rocking (shoulders oscillating X or Y)
+      if (now - motor.lastRockTime > 3000) {
+        let xChanges = 0, yChanges = 0;
+        let xMin = 1, xMax = 0, yMin = 1, yMax = 0;
+        let lastXDir = 0, lastYDir = 0;
+        for (let i = 1; i < history.length; i++) {
+            const prevX = (history[i - 1].lsX + history[i - 1].rsX) / 2;
+            const prevY = (history[i - 1].lsY + history[i - 1].rsY) / 2;
+            const currX = (history[i].lsX + history[i].rsX) / 2;
+            const currY = (history[i].lsY + history[i].rsY) / 2;
+            xMin = Math.min(xMin, currX); xMax = Math.max(xMax, currX);
+            yMin = Math.min(yMin, currY); yMax = Math.max(yMax, currY);
+            const xDir = Math.sign(currX - prevX);
+            const yDir = Math.sign(currY - prevY);
+            if (xDir !== 0 && lastXDir !== 0 && xDir !== lastXDir) xChanges++;
+            if (xDir !== 0) lastXDir = xDir;
+            if (yDir !== 0 && lastYDir !== 0 && yDir !== lastYDir) yChanges++;
+            if (yDir !== 0) lastYDir = yDir;
+        }
+        if ((xChanges >= 4 && xMax - xMin > 0.04) || (yChanges >= 4 && yMax - yMin > 0.04)) {
+            motor.bodyRockEvents += 1;
+            motor.lastRockTime = now;
+            motor.newRock = true;
+        }
+      }
 
-      if (isFlapping) {
-        motor.flappingEvents += 1;
-        motor.lastFlapTime = now;
-        motor.newFlap = true;
+      // 3. Wrist Posturing (wrists elevated above shoulders, velocity near zero)
+      if (now - motor.lastPostureTime > 3000) {
+          const lY = history.map(h => h.ly);
+          const rY = history.map(h => h.ry);
+          const lsY = history.map(h => h.lsY);
+          
+          const meanLY = lY.reduce((a,b)=>a+b)/lY.length;
+          const varLY = lY.reduce((acc, v) => acc + (v - meanLY) ** 2, 0) / lY.length;
+          const meanSY = lsY.reduce((a,b)=>a+b)/lsY.length;
+
+          // image coords: smaller y is higher
+          if (meanLY < meanSY && varLY < 0.0005) {
+              motor.wristPostureEvents += 1;
+              motor.lastPostureTime = now;
+              motor.newPosture = true;
+          }
       }
     }
   };
 
+  const onHandsResults = (results: any) => {
+    if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) return;
+    const now = Date.now();
+    const hands = handsMetrics.current;
+    hands.newFlick = false;
+    
+    // Check first hand
+    const lm = results.multiHandLandmarks[0];
+    if (!lm || lm.length < 21) return;
+    const thumb = lm[4];
+    const index = lm[8];
+    const dist = Math.sqrt(Math.pow(thumb.x - index.x, 2) + Math.pow(thumb.y - index.y, 2));
+    
+    hands.flickHistory.push({ time: now, dist });
+    hands.flickHistory = hands.flickHistory.filter((h) => now - h.time < 2000);
+
+    if (now - hands.lastFlickTime > 3000 && hands.flickHistory.length > 10) {
+        let dChanges = 0;
+        let dMin = 1, dMax = 0;
+        let lastDir = 0;
+        for (let i = 1; i < hands.flickHistory.length; i++) {
+            const prev = hands.flickHistory[i-1].dist;
+            const curr = hands.flickHistory[i].dist;
+            dMin = Math.min(dMin, curr); dMax = Math.max(dMax, curr);
+            const dDir = Math.sign(curr - prev);
+            if (dDir !== 0 && lastDir !== 0 && dDir !== lastDir) dChanges++;
+            if (dDir !== 0) lastDir = dDir;
+        }
+        if (dChanges >= 5 && dMax - dMin > 0.03) {
+            hands.flickingEvents += 1;
+            hands.lastFlickTime = now;
+            hands.newFlick = true;
+        }
+    }
+  };
+
   const onFaceResults = (results: any) => {
+    const now = Date.now();
+
     if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
       latestMetrics.current = {
         ...latestMetrics.current,
         status: "No Face Detected",
       };
-      return;
-    }
+    } else {
+      const em = eyeMetrics.current;
+      if (em.sessionStartTime === 0) em.sessionStartTime = now;
+      em.newTic = false;
 
-    const em = eyeMetrics.current;
-    if (em.sessionStartTime === 0) em.sessionStartTime = Date.now();
-
-    const landmarks = results.multiFaceLandmarks[0];
-
-    // Head pose
-    const nose = landmarks[1];
+      const landmarks = results.multiFaceLandmarks[0];
+      if (landmarks && landmarks.length >= 468) {
+        // Head pose
+        const nose = landmarks[1];
     const leftEye = landmarks[33];
     const rightEye = landmarks[263];
     const eyeDist = Math.abs(rightEye.x - leftEye.x);
@@ -171,23 +275,62 @@ export default function HiddenCameraProcessor({
     const postureSD = stdDev(em.yawHistory) + stdDev(em.pitchHistory);
     const postureStable = postureSD < 12;
 
-    latestMetrics.current = {
-      pitch: pitchDeg,
-      yaw: yawDeg,
-      roll: 0,
-      status,
-      ear: parseFloat(avgEAR.toFixed(4)),
-      blinks: em.blinks,
-      blinkRate,
-      aversions: em.aversions,
-      irisPosition,
-      flappingEvents: motorMetrics.current.flappingEvents,
-      postureStable,
-      newFlap: motorMetrics.current.newFlap,
-    };
+    // 4. Head Tic (rapid yaw/pitch oscillation)
+    em.ticHistory.push({ time: now, yaw: yawDeg, pitch: pitchDeg });
+    em.ticHistory = em.ticHistory.filter(h => now - h.time < 2000);
+    
+    if (now - em.lastTicTime > 3000 && em.ticHistory.length > 10) {
+        let yChanges = 0, pChanges = 0;
+        let yMin = 999, yMax = -999, pMin = 999, pMax = -999;
+        let lastYDir = 0, lastPDir = 0;
+        for (let i = 1; i < em.ticHistory.length; i++) {
+            const prev = em.ticHistory[i-1];
+            const curr = em.ticHistory[i];
+            yMin = Math.min(yMin, curr.yaw); yMax = Math.max(yMax, curr.yaw);
+            pMin = Math.min(pMin, curr.pitch); pMax = Math.max(pMax, curr.pitch);
+            
+            const yDir = Math.sign(curr.yaw - prev.yaw);
+            if (yDir !== 0 && lastYDir !== 0 && yDir !== lastYDir) yChanges++;
+            if (yDir !== 0) lastYDir = yDir;
+            
+            const pDir = Math.sign(curr.pitch - prev.pitch);
+            if (pDir !== 0 && lastPDir !== 0 && pDir !== lastPDir) pChanges++;
+            if (pDir !== 0) lastPDir = pDir;
+        }
+        
+        if ((yChanges >= 4 && yMax - yMin > 10) || (pChanges >= 4 && pMax - pMin > 10)) {
+            em.ticEvents += 1;
+            em.lastTicTime = now;
+            em.newTic = true;
+        }
+    }
+
+      latestMetrics.current = {
+        pitch: pitchDeg,
+        yaw: yawDeg,
+        roll: 0,
+        status,
+        ear: parseFloat(avgEAR.toFixed(4)),
+        blinks: em.blinks,
+        blinkRate,
+        aversions: em.aversions,
+        irisPosition,
+        flappingEvents: motorMetrics.current.flappingEvents,
+        bodyRockEvents: motorMetrics.current.bodyRockEvents,
+        wristPostureEvents: motorMetrics.current.wristPostureEvents,
+        flickingEvents: handsMetrics.current.flickingEvents,
+        ticEvents: em.ticEvents,
+        postureStable,
+        newFlap: motorMetrics.current.newFlap,
+        newRock: motorMetrics.current.newRock,
+        newPosture: motorMetrics.current.newPosture,
+        newFlick: handsMetrics.current.newFlick,
+        newTic: em.newTic,
+      };
+    }
+    }
 
     // Send to backend every 500ms
-    const now = Date.now();
     if (now - lastSendRef.current > 500 && wsRef.current?.readyState === WebSocket.OPEN) {
       
       let base64Frame = undefined;
@@ -213,15 +356,15 @@ export default function HiddenCameraProcessor({
         })
       );
       lastSendRef.current = now;
-      // Reset newFlap flag after sending
       motorMetrics.current.newFlap = false;
+      motorMetrics.current.newRock = false;
+      motorMetrics.current.newPosture = false;
+      handsMetrics.current.newFlick = false;
+      em.newTic = false;
     }
   };
 
   useEffect(() => {
-    if (isInitialized.current) return;
-    isInitialized.current = true;
-
     // Connect to the capture WebSocket
     const ws = new WebSocket(`ws://localhost:8001/api/ws/capture/${sessionId}`);
     wsRef.current = ws;
@@ -244,12 +387,7 @@ export default function HiddenCameraProcessor({
           const faceMesh = new window.FaceMesh({
             locateFile: (f: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}`,
           });
-          faceMesh.setOptions({
-            maxNumFaces: 1,
-            refineLandmarks: true,
-            minDetectionConfidence: 0.5,
-            minTrackingConfidence: 0.5,
-          });
+          faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
           faceMesh.onResults(onFaceResults);
 
           const pose = new window.Pose({
@@ -258,11 +396,28 @@ export default function HiddenCameraProcessor({
           pose.setOptions({ modelComplexity: 1, smoothLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
           pose.onResults(onPoseResults);
 
+          let hands: any = null;
+          if (window.Hands) {
+            try {
+              hands = new window.Hands({
+                locateFile: (f: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`,
+              });
+              hands.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+              hands.onResults(onHandsResults);
+            } catch (e) {
+              console.warn("Failed to init Hands:", e);
+              hands = null;
+            }
+          }
+
           const camera = new window.Camera(videoRef.current, {
             onFrame: async () => {
               if (videoRef.current) {
-                await faceMesh.send({ image: videoRef.current });
-                await pose.send({ image: videoRef.current });
+                try { await faceMesh.send({ image: videoRef.current }); } catch (e) { console.warn("FaceMesh send error", e); }
+                try { await pose.send({ image: videoRef.current }); } catch (e) { console.warn("Pose send error", e); }
+                if (hands) {
+                  try { await hands.send({ image: videoRef.current }); } catch (e) { console.warn("Hands send error", e); }
+                }
               }
             },
             width: 320,
@@ -293,6 +448,7 @@ export default function HiddenCameraProcessor({
       <Script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" strategy="afterInteractive" crossOrigin="anonymous" />
       <Script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" strategy="afterInteractive" crossOrigin="anonymous" />
       <Script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" strategy="afterInteractive" crossOrigin="anonymous" />
+      <Script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" strategy="afterInteractive" crossOrigin="anonymous" />
       {/* Hidden camera elements */}
       <video ref={videoRef} autoPlay playsInline muted className="hidden" />
       <canvas ref={canvasRef} className="hidden" />
