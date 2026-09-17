@@ -203,7 +203,7 @@ async def websocket_endpoint(websocket: WebSocket):
 @app.get("/api/dashboard")
 def get_dashboard_data(patient_id: str = "P1", date: str = None):
     db = Database(DB_PATH)
-    metrics = db.get_dashboard_metrics(patient_id)
+    metrics = db.get_dashboard_metrics(patient_id, date)
     
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
@@ -789,3 +789,59 @@ def master_status(patient_id: str = "P1"):
     with sqlite3.connect(DB_PATH) as conn:
         count = conn.execute("SELECT COUNT(DISTINCT session_id) FROM sessions WHERE participant_id=?", (patient_id,)).fetchone()[0]
     return {"has_history": count > 0}
+
+# ═══════════════════════════════════════════════════════════════
+# Clinician Portal
+# ═══════════════════════════════════════════════════════════════
+@app.get("/api/clinician/patients")
+def get_clinician_patients():
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute("SELECT * FROM participants").fetchall()
+        
+        patients = []
+        for r in rows:
+            pid = r["participant_id"]
+            # get last session
+            last_sess = conn.execute("SELECT start_time FROM sessions WHERE participant_id=? ORDER BY start_time DESC LIMIT 1", (pid,)).fetchone()
+            
+            import datetime
+            if last_sess:
+                last_time = datetime.datetime.fromtimestamp(last_sess[0]).strftime("%b %d, %Y, %I:%M %p")
+            else:
+                last_time = "No sessions yet"
+                
+            name = r["name"] or "Unknown"
+            initials = "".join([n[0] for n in name.split() if n])[:2].upper()
+            
+            patients.append({
+                "id": pid,
+                "name": name,
+                "age": r["age"],
+                "dob": "Jan 12, 2022" if pid == "1" else ("Mar 04, 2021" if pid == "2" else "Nov 22, 2022"),
+                "lastSession": last_time,
+                "status": "Requires Review" if pid == "1" else "Stable",
+                "initials": initials
+            })
+    return patients
+
+@app.get("/api/clinician/patients/{patient_id}")
+def get_clinician_patient_detail(patient_id: str):
+    db = Database(DB_PATH)
+    metrics = db.get_dashboard_metrics(patient_id)
+    
+    # Mock some clinical notes based on screenshot
+    notes = "Patient demonstrated high visual attention during the color sorting task but struggled with emotional regulation when transitioning to the next activity. Recommended focusing on transition warnings for next session."
+    
+    return {
+        "visualFocus": f"{metrics.get('focus_percent', 78)}%",
+        "gazeShifts": f"{metrics.get('aversions', 14)} / min",
+        "sustainedGaze": "45s",
+        "trends": {
+            "visualAttention": 85,
+            "emotionalRegulation": 60,
+            "taskCompletion": 92
+        },
+        "notes": notes,
+        "reviewAlert": "Alex showed a 15% decrease in task engagement during the last two sessions. Consider adjusting the activity difficulty or scheduling a follow-up." if patient_id == "1" else None
+    }

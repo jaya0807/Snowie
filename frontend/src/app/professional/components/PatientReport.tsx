@@ -1,9 +1,24 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Download, Plus, Activity, Brain, Clock, AlertTriangle, FileText, Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
 export function PatientReport({ selectedPatient }: { selectedPatient: any }) {
+  const [details, setDetails] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (selectedPatient?.id) {
+      setLoading(true);
+      fetch(`http://localhost:8001/api/clinician/patients/${selectedPatient.id}`)
+        .then(res => res.json())
+        .then(data => {
+          setDetails(data);
+          setLoading(false);
+        });
+    }
+  }, [selectedPatient?.id]);
+
   if (!selectedPatient) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-zinc-400 p-8 text-center">
@@ -41,13 +56,13 @@ export function PatientReport({ selectedPatient }: { selectedPatient: any }) {
       </div>
 
       <div className="flex-1 overflow-auto p-6 space-y-6">
-        {selectedPatient.status === 'Requires Review' && (
+        {details?.reviewAlert && (
           <div className="bg-warning-bg border border-warning-light/50 p-4 rounded-xl flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-warning-dark shrink-0 mt-0.5" />
             <div>
               <h4 className="font-semibold text-warning-dark text-sm">Review Recommended</h4>
               <p className="text-sm text-warning-dark/80 mt-1">
-                Alex showed a 15% decrease in task engagement during the last two sessions. Consider adjusting the activity difficulty or scheduling a follow-up.
+                {details.reviewAlert}
               </p>
             </div>
           </div>
@@ -61,7 +76,7 @@ export function PatientReport({ selectedPatient }: { selectedPatient: any }) {
               </div>
               <div>
                 <p className="text-xs text-zinc-500 font-medium">Visual Focus</p>
-                <p className="text-xl font-bold text-zinc-900">78%</p>
+                <p className="text-xl font-bold text-zinc-900">{details?.visualFocus || "—"}</p>
               </div>
             </CardContent>
           </Card>
@@ -72,7 +87,7 @@ export function PatientReport({ selectedPatient }: { selectedPatient: any }) {
               </div>
               <div>
                 <p className="text-xs text-zinc-500 font-medium">Gaze Shifts</p>
-                <p className="text-xl font-bold text-zinc-900">14 / min</p>
+                <p className="text-xl font-bold text-zinc-900">{details?.gazeShifts || "—"}</p>
               </div>
             </CardContent>
           </Card>
@@ -83,7 +98,7 @@ export function PatientReport({ selectedPatient }: { selectedPatient: any }) {
               </div>
               <div>
                 <p className="text-xs text-zinc-500 font-medium">Avg Sustained Gaze</p>
-                <p className="text-xl font-bold text-zinc-900">45s</p>
+                <p className="text-xl font-bold text-zinc-900">{details?.sustainedGaze || "—"}</p>
               </div>
             </CardContent>
           </Card>
@@ -98,23 +113,23 @@ export function PatientReport({ selectedPatient }: { selectedPatient: any }) {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="font-medium text-zinc-700">Visual Attention</span>
-                  <span className="text-zinc-900 font-bold">85%</span>
+                  <span className="text-zinc-900 font-bold">{details?.trends?.visualAttention || 0}%</span>
                 </div>
-                <Progress value={85} className="h-2 [&>div]:bg-success" />
+                <Progress value={details?.trends?.visualAttention || 0} className={`h-2 [&>div]:${(details?.trends?.visualAttention || 0) >= 80 ? 'bg-success' : 'bg-warning'}`} />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="font-medium text-zinc-700">Emotional Regulation</span>
-                  <span className="text-zinc-900 font-bold">60%</span>
+                  <span className="text-zinc-900 font-bold">{details?.trends?.emotionalRegulation || 0}%</span>
                 </div>
-                <Progress value={60} className="h-2 [&>div]:bg-warning" />
+                <Progress value={details?.trends?.emotionalRegulation || 0} className={`h-2 [&>div]:${(details?.trends?.emotionalRegulation || 0) >= 80 ? 'bg-success' : 'bg-warning'}`} />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="font-medium text-zinc-700">Task Completion</span>
-                  <span className="text-zinc-900 font-bold">92%</span>
+                  <span className="text-zinc-900 font-bold">{details?.trends?.taskCompletion || 0}%</span>
                 </div>
-                <Progress value={92} className="h-2 [&>div]:bg-success" />
+                <Progress value={details?.trends?.taskCompletion || 0} className={`h-2 [&>div]:${(details?.trends?.taskCompletion || 0) >= 80 ? 'bg-success' : 'bg-warning'}`} />
               </div>
             </CardContent>
           </Card>
@@ -131,7 +146,7 @@ export function PatientReport({ selectedPatient }: { selectedPatient: any }) {
                     <span>Today, 2:30 PM</span>
                   </div>
                   <p className="text-sm text-zinc-700 leading-relaxed">
-                    Patient demonstrated high visual attention during the color sorting task but struggled with emotional regulation when transitioning to the next activity. Recommended focusing on transition warnings for next session.
+                    {details?.notes}
                   </p>
                 </div>
                 <div className="p-4">
