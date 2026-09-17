@@ -28,14 +28,14 @@ export default function ProfessionalDashboard() {
   if (loading) return <div className="p-8 text-zinc-500">Loading patients...</div>;
 
   return (
-    <div className="h-full flex flex-col lg:flex-row gap-6 p-4">
+    <div className="h-[calc(100vh-8rem)] flex flex-col lg:flex-row gap-4">
       <PatientList 
         patients={patients} 
         selectedPatientId={selectedPatientId || (patients[0]?.id)} 
         setSelectedPatientId={setSelectedPatientId} 
       />
       
-      <div className="flex-1 bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden flex flex-col">
+      <div className="flex-1 glass overflow-hidden flex flex-col">
         {selectedPatient ? (
           <PatientReport selectedPatient={selectedPatient} />
         ) : (

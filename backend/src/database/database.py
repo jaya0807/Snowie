@@ -265,79 +265,80 @@ class Database:
     # ──────────────────────────────────────────────
     # Dashboard Aggregations
     # ──────────────────────────────────────────────
-    def get_dashboard_metrics(self, participant_id: str) -> dict:
-        """Returns aggregated real-time metrics for the parent dashboard."""
+    def get_dashboard_metrics(self, participant_id: str, date: str = None) -> dict:
+        """Returns aggregated real-time metrics for the professional dashboard."""
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
 
-            # Total sessions
+            date_filter = ""
+            params = [participant_id]
+            if date:
+                date_filter = " AND strftime('%Y-%m-%d', datetime(s.start_time, 'unixepoch', 'localtime')) = ?"
+                params.append(date)
+
             total_sessions = conn.execute(
-                "SELECT COUNT(DISTINCT session_id) FROM sessions WHERE participant_id=?", (participant_id,)
+                f"SELECT COUNT(DISTINCT s.session_id) FROM sessions s WHERE s.participant_id=?{date_filter}", params
             ).fetchone()[0]
 
-            # Average accuracy
             avg_acc_row = conn.execute(
-                "SELECT AVG(accuracy) FROM sessions WHERE participant_id=? AND accuracy IS NOT NULL",
-                (participant_id,)
+                f"SELECT AVG(s.accuracy) FROM sessions s WHERE s.participant_id=? AND s.accuracy IS NOT NULL{date_filter}", params
             ).fetchone()[0]
             avg_accuracy = round((avg_acc_row or 0) * 100, 1)
 
-            # Telemetry-based focus (across all sessions for this participant)
             focus_row = conn.execute(
-                """SELECT
+                f"""SELECT
                      COUNT(CASE WHEN t.status LIKE 'Focused%' THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0)
                    FROM telemetry t
                    JOIN sessions s ON t.session_id = s.session_id
-                   WHERE s.participant_id=?""",
-                (participant_id,)
+                   WHERE s.participant_id=?{date_filter}""",
+                params
             ).fetchone()[0]
             focus_percent = round(focus_row or 0, 1)
 
-            # Posture stability (% stable frames)
             posture_row = conn.execute(
-                """SELECT
+                f"""SELECT
                      SUM(t.posture_stable) * 100.0 / NULLIF(COUNT(*), 0)
                    FROM telemetry t
                    JOIN sessions s ON t.session_id = s.session_id
-                   WHERE s.participant_id=?""",
-                (participant_id,)
+                   WHERE s.participant_id=?{date_filter}""",
+                params
             ).fetchone()[0]
             posture_percent = round(posture_row or 0, 1)
 
-            # Motor event counts across all sessions
             motor_rows = conn.execute(
-                """SELECT e.event_type, COUNT(*) as cnt
+                f"""SELECT
+                     e.event_type, COUNT(*) as cnt
                    FROM events e
                    JOIN sessions s ON e.session_id = s.session_id
-                   WHERE s.participant_id=?
+                   WHERE s.participant_id=?{date_filter}
                    GROUP BY e.event_type""",
-                (participant_id,)
+                params
             ).fetchall()
-            motor_events = {r["event_type"]: r["cnt"] for r in motor_rows}
 
-            # Aversions count
-            aversions = motor_events.get("GAZE_AVERSION", 0)
-            hand_flapping = motor_events.get("HAND_FLAPPING", 0)
-            body_rocking = motor_events.get("BODY_ROCKING", 0)
-            wrist_posturing = motor_events.get("WRIST_POSTURING", 0)
-            finger_flicking = motor_events.get("FINGER_FLICKING", 0)
-            head_tics = motor_events.get("HEAD_TIC", 0)
-            posture_unstable = motor_events.get("POSTURE_UNSTABLE", 0)
-
-        return {
+        metrics = {
             "total_sessions": total_sessions,
-            "avg_accuracy_percent": avg_accuracy,
+            "avg_accuracy": avg_accuracy,
             "focus_percent": focus_percent,
             "posture_percent": posture_percent,
-            "aversions": aversions,
-            "hand_flapping": hand_flapping,
-            "body_rocking": body_rocking,
-            "wrist_posturing": wrist_posturing,
-            "finger_flicking": finger_flicking,
-            "head_tics": head_tics,
-            "posture_unstable_events": posture_unstable,
-            "motor_events_total": hand_flapping + body_rocking + wrist_posturing + finger_flicking + head_tics,
+            "hand_flapping": 0,
+            "body_rocking": 0,
+            "motor_events_total": 0,
+            "aversions": 0
         }
+
+        for row in motor_rows:
+            ev_type = row["event_type"]
+            cnt = row["cnt"]
+            if ev_type == "hand_flapping":
+                metrics["hand_flapping"] = cnt
+                metrics["motor_events_total"] += cnt
+            elif ev_type == "body_rocking":
+                metrics["body_rocking"] = cnt
+                metrics["motor_events_total"] += cnt
+            elif ev_type == "gaze_aversion":
+                metrics["aversions"] = cnt
+
+        return metrics
 
     def get_session_full_summary(self, session_id: str) -> dict:
         """Returns full session data for report generation."""

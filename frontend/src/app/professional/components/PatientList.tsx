@@ -12,13 +12,13 @@ export function PatientList({
 }) {
   return (
     <div className="w-full lg:w-80 flex-shrink-0 flex flex-col gap-4">
-      <div className="bg-white rounded-2xl border border-black/5 p-4 shadow-sm">
+      <div className="glass p-4">
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
           <input 
             type="text" 
             placeholder="Search patients..." 
-            className="w-full pl-9 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 transition-all"
+            className="w-full pl-9 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 transition-all"
           />
         </div>
         
@@ -27,7 +27,7 @@ export function PatientList({
             <button 
               key={patient.id}
               onClick={() => setSelectedPatientId(patient.id)}
-              className={`flex items-start gap-3 p-3 rounded-xl text-left transition-all ${
+              className={`flex items-start gap-3 p-3 rounded-lg text-left transition-all ${
                 selectedPatientId === patient.id 
                   ? "bg-brand/5 border border-brand/20 shadow-sm" 
                   : "hover:bg-zinc-50 border border-transparent"

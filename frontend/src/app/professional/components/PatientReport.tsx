@@ -46,10 +46,10 @@ export function PatientReport({ selectedPatient }: { selectedPatient: any }) {
           </div>
         </div>
         <div className="flex gap-2">
-          <button className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+          <button className="btn-secondary px-4 py-2 text-sm font-medium transition-colors flex items-center gap-2">
             <Plus className="w-4 h-4" /> Add Note
           </button>
-          <button className="px-4 py-2 bg-brand hover:bg-brand-dark text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm">
+          <button className="btn-primary px-4 py-2 text-sm font-medium transition-colors flex items-center gap-2">
             <Download className="w-4 h-4" /> Export Report
           </button>
         </div>
@@ -69,7 +69,7 @@ export function PatientReport({ selectedPatient }: { selectedPatient: any }) {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="shadow-none border-black/5 bg-zinc-50/50">
+          <Card className="glass">
             <CardContent className="p-4 flex items-center gap-4">
               <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center">
                 <Activity className="w-5 h-5 text-brand" />
@@ -80,7 +80,7 @@ export function PatientReport({ selectedPatient }: { selectedPatient: any }) {
               </div>
             </CardContent>
           </Card>
-          <Card className="shadow-none border-black/5 bg-zinc-50/50">
+          <Card className="glass">
             <CardContent className="p-4 flex items-center gap-4">
               <div className="w-10 h-10 rounded-lg bg-success-bg flex items-center justify-center">
                 <Brain className="w-5 h-5 text-success" />
@@ -91,7 +91,7 @@ export function PatientReport({ selectedPatient }: { selectedPatient: any }) {
               </div>
             </CardContent>
           </Card>
-          <Card className="shadow-none border-black/5 bg-zinc-50/50">
+          <Card className="glass">
             <CardContent className="p-4 flex items-center gap-4">
               <div className="w-10 h-10 rounded-lg bg-zinc-100 flex items-center justify-center">
                 <Clock className="w-5 h-5 text-zinc-700" />
@@ -105,7 +105,7 @@ export function PatientReport({ selectedPatient }: { selectedPatient: any }) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="shadow-none border-black/5">
+          <Card className="glass">
             <CardHeader className="pb-3 border-b border-black/5">
               <CardTitle className="text-base">Behavioral Trends (Last 30 Days)</CardTitle>
             </CardHeader>
@@ -134,7 +134,7 @@ export function PatientReport({ selectedPatient }: { selectedPatient: any }) {
             </CardContent>
           </Card>
 
-          <Card className="shadow-none border-black/5 flex flex-col">
+          <Card className="glass flex flex-col h-full">
             <CardHeader className="pb-3 border-b border-black/5">
               <CardTitle className="text-base">Latest Clinical Notes</CardTitle>
             </CardHeader>
