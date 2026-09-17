@@ -227,19 +227,26 @@ def get_dashboard_data(patient_id: str = "P1"):
     # Build chart data from real history
     response_latency_data = []
     interaction_duration_data = []
-    for i, s in enumerate(reversed(recent), start=1):
-        label = f"Session {i}"
-        response_latency_data.append({
-            "name":    label,
-            "latency": s.get("response_time_sec"),
-        })
-        try:
-            start = float(s["start_time"])
-            end = float(s["end_time"] or start)
-            dur = round((end - start) / 60, 1)
-        except Exception:
-            dur = None
-        interaction_duration_data.append({"name": label, "duration": dur})
+    
+    if not recent:
+        # Provide an empty grid structure so the frontend graph axes render
+        for i in range(1, 6):
+            response_latency_data.append({"name": f"Session {i}", "latency": None})
+            interaction_duration_data.append({"name": f"Session {i}", "duration": None})
+    else:
+        for i, s in enumerate(reversed(recent), start=1):
+            label = f"Session {i}"
+            response_latency_data.append({
+                "name":    label,
+                "latency": s.get("response_time_sec"),
+            })
+            try:
+                start = float(s["start_time"])
+                end = float(s["end_time"] or start)
+                dur = round((end - start) / 60, 1)
+            except Exception:
+                dur = None
+            interaction_duration_data.append({"name": label, "duration": dur})
 
     total_sessions = metrics["total_sessions"]
     hand_flapping = metrics["hand_flapping"]
@@ -249,8 +256,9 @@ def get_dashboard_data(patient_id: str = "P1"):
     posture_pct   = metrics["posture_percent"]
     aversions     = metrics["aversions"]
 
-    posture_label = "Stable" if posture_pct >= 70 else "Unstable"
-    movement_label = "Calm" if motor_total == 0 else "Active"
+    posture_label = "No Data" if total_sessions == 0 else ("Stable" if posture_pct >= 70 else "Unstable")
+    movement_label = "No Data" if total_sessions == 0 else ("Calm" if motor_total == 0 else "Active")
+    focus_label = "No Data" if total_sessions == 0 else f"{focus_pct}%"
 
     return {
         "stats": {
@@ -274,7 +282,7 @@ def get_dashboard_data(patient_id: str = "P1"):
                 "label":              "Body Movement",
             },
             "eyeTracking": {
-                "value":      f"{focus_pct}%",
+                "value":      focus_label,
                 "trend":      f"{aversions} gaze aversion(s)",
                 "isPositive": focus_pct >= 70,
                 "label":      "Visual Focus",
