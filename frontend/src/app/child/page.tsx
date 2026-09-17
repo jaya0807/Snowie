@@ -2,18 +2,33 @@
 
 import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import Activity1UI from "@/activities/a1_natural_interaction/Activity1UI";
-import Activity2UI from "@/activities/a2_follow_instruction/Activity2UI";
-import Activity3UI from "@/activities/a3_target_finding/Activity3UI";
-import Activity4UI from "@/activities/a4_imitation/Activity4UI";
-import Activity5UI from "@/activities/a5_emotion_social/Activity5UI";
-import Activity6UI from "@/activities/a6_controlled_challenge/Activity6UI";
+import dynamic from 'next/dynamic';
+
+const Activity1UI = dynamic(() => import('@/activities/a1_natural_interaction/Activity1UI'), { loading: () => <div className="h-screen w-full flex items-center justify-center bg-zinc-900 text-white font-bold text-2xl">Loading Activity...</div> });
+const Activity2UI = dynamic(() => import('@/activities/a2_follow_instruction/Activity2UI'), { loading: () => <div className="h-screen w-full flex items-center justify-center bg-zinc-900 text-white font-bold text-2xl">Loading Activity...</div> });
+const Activity3UI = dynamic(() => import('@/activities/a3_target_finding/Activity3UI'), { loading: () => <div className="h-screen w-full flex items-center justify-center bg-zinc-900 text-white font-bold text-2xl">Loading Activity...</div> });
+const Activity4UI = dynamic(() => import('@/activities/a4_imitation/Activity4UI'), { loading: () => <div className="h-screen w-full flex items-center justify-center bg-zinc-900 text-white font-bold text-2xl">Loading Activity...</div> });
+const Activity5UI = dynamic(() => import('@/activities/a5_emotion_social/Activity5UI'), { loading: () => <div className="h-screen w-full flex items-center justify-center bg-zinc-900 text-white font-bold text-2xl">Loading Activity...</div> });
+const Activity6UI = dynamic(() => import('@/activities/a6_controlled_challenge/Activity6UI'), { loading: () => <div className="h-screen w-full flex items-center justify-center bg-zinc-900 text-white font-bold text-2xl">Loading Activity...</div> });
 import { ArrowLeft } from "lucide-react";
+import { useEffect } from "react";
 
 function ChildContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const activityId = searchParams.get("activity") || "A1";
+
+  useEffect(() => {
+    // Clear forceNewSession flag so it only applies once
+    setTimeout(() => localStorage.removeItem("forceNewSession"), 2000);
+    // Heartbeat to let the dashboard know a session is active
+    localStorage.setItem("childLiveHeartbeat", Date.now().toString());
+    const interval = setInterval(() => {
+      localStorage.setItem("childLiveHeartbeat", Date.now().toString());
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
   
   if (activityId === "A1") return <Activity1UI />;
   if (activityId === "A2") return <Activity2UI />;

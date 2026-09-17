@@ -3,26 +3,51 @@
 import Link from "next/link";
 import { Logo } from "@/components/common/Logo";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Camera, Activity, LayoutDashboard, Users, FileText, Settings, ClipboardList, Target, Sprout, TrendingUp } from "lucide-react";
 
-function NavItem({ href, icon: Icon, label }: { href: string, icon: any, label: string }) {
+function NavItem({ href, icon: Icon, label, isLive = false }: { href: string, icon: any, label: string, isLive?: boolean }) {
   const pathname = usePathname();
   const isActive = pathname === href || pathname?.startsWith(`${href}/`);
   return (
     <Link 
       href={href} 
-      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+      className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors ${
         isActive ? "bg-brand/10 text-zinc-900" : "text-zinc-500 hover:text-zinc-900 hover:bg-brand/5"
       }`}
     >
-      <Icon className="w-4 h-4" />
-      <span className="font-medium text-sm">{label}</span>
+      <div className="flex items-center gap-3">
+        <Icon className="w-4 h-4" />
+        <span className="font-medium text-sm">{label}</span>
+      </div>
+      {isLive && (
+        <span className="flex h-2 w-2 relative">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+        </span>
+      )}
     </Link>
   );
 }
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [isLive, setIsLive] = useState(false);
+
+  useEffect(() => {
+    const checkLive = () => {
+      const hb = localStorage.getItem("childLiveHeartbeat");
+      if (hb) {
+        setIsLive(Date.now() - parseInt(hb) < 5000);
+      } else {
+        setIsLive(false);
+      }
+    };
+    
+    checkLive();
+    const interval = setInterval(checkLive, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <aside className="w-56 flex-shrink-0 hidden md:flex flex-col bg-white border-r border-black/5 m-3 rounded-lg z-10 shadow-[0_4px_14px_0_rgba(23,107,156,0.12),0_2px_4px_0_rgba(23,107,156,0.06)]">
@@ -39,7 +64,7 @@ export function Sidebar() {
         <div>
           <h3 className="px-3 text-[10px] font-bold tracking-widest text-zinc-400 mb-2 uppercase">Observe</h3>
           <div className="space-y-1.5">
-            <NavItem href="/sessions" icon={Activity} label="Live Session" />
+            <NavItem href="/parents-monitor" icon={Activity} label="Parents Monitor" isLive={isLive} />
             <NavItem href="/activities" icon={ClipboardList} label="Activities" />
           </div>
         </div>

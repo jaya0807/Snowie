@@ -12,6 +12,7 @@ import {
 export default function DashboardHome() {
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>("");
   
   const [data, setData] = useState<any>({
     stats: { 
@@ -27,7 +28,7 @@ export default function DashboardHome() {
 
   useEffect(() => {
     setIsMounted(true);
-    fetch("http://localhost:8001/api/dashboard")
+    fetch(selectedDate ? `http://localhost:8001/api/dashboard?date=${selectedDate}` : "http://localhost:8001/api/dashboard")
       .then(res => res.json())
       .then(json => {
         if (json.stats) {
@@ -48,7 +49,7 @@ export default function DashboardHome() {
           interactionDurationData: []
         });
       });
-  }, []);
+  }, [selectedDate]);
 
   const statsList = [
     { label: data.stats?.totalSessions?.label || "Total Sessions", value: data.stats?.totalSessions?.value || "0", icon: Activity, trend: data.stats?.totalSessions?.trend, isPositive: data.stats?.totalSessions?.isPositive },
@@ -77,13 +78,13 @@ export default function DashboardHome() {
         {statsList.map((stat, i) => (
           <Card key={i} className="glass group hover:bg-white transition-all duration-300 relative overflow-hidden flex flex-col">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-              <CardTitle className="text-sm font-semibold text-zinc-600">{stat.label}</CardTitle>
+              <CardTitle className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">{stat.label}</CardTitle>
               <div className="p-2 bg-brand/5 rounded-lg border border-brand/10">
                 <stat.icon className="w-4 h-4 text-brand" />
               </div>
             </CardHeader>
             <CardContent className="relative z-10 flex-1 flex flex-col">
-              <div className="text-3xl font-black text-zinc-900 tracking-tight">{stat.value}</div>
+              <div className="text-2xl font-black text-zinc-900 tracking-tight">{stat.value}</div>
               
               {stat.label === "Body Movement" ? (
                 <>
@@ -114,11 +115,17 @@ export default function DashboardHome() {
         
         {/* GRAPH 1: Response Latency */}
         <Card size="sm" className="glass flex flex-col h-full">
-          <CardHeader className="shrink-0 flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-lg text-zinc-900">Response Latency</CardTitle>
-              <p className="text-xs text-zinc-500 mt-1">Response time across activities and sessions</p>
-            </div>
+          <CardHeader className="border-b border-black/5 p-4 shrink-0 bg-zinc-50/50 flex flex-row items-center justify-between">
+            <CardTitle className="text-xs font-bold flex items-center gap-2 m-0 uppercase tracking-wider text-zinc-500">
+              <svg className="w-4 h-4 text-brand" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              Response Latency
+            </CardTitle>
+            <input 
+              type="date" 
+              className="text-[10px] text-zinc-500 bg-zinc-100/50 border border-black/5 rounded px-2 py-1 outline-none cursor-pointer hover:bg-zinc-100 transition-colors"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+            />
           </CardHeader>
           <CardContent className="flex-1 min-h-0 relative">
             {!isMounted || !data.responseLatencyData || data.responseLatencyData.length === 0 ? (
@@ -145,11 +152,17 @@ export default function DashboardHome() {
 
         {/* GRAPH 2: Interaction Duration */}
         <Card size="sm" className="glass flex flex-col h-full">
-          <CardHeader className="shrink-0 flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-lg text-zinc-900">Interaction Duration</CardTitle>
-              <p className="text-xs text-zinc-500 mt-1">Interaction duration across sessions</p>
-            </div>
+          <CardHeader className="border-b border-black/5 p-4 shrink-0 bg-zinc-50/50 flex flex-row items-center justify-between">
+            <CardTitle className="text-xs font-bold flex items-center gap-2 m-0 uppercase tracking-wider text-zinc-500">
+              <svg className="w-4 h-4 text-brand" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+              Interaction Duration
+            </CardTitle>
+            <input 
+              type="date" 
+              className="text-[10px] text-zinc-500 bg-zinc-100/50 border border-black/5 rounded px-2 py-1 outline-none cursor-pointer hover:bg-zinc-100 transition-colors"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+            />
           </CardHeader>
           <CardContent className="flex-1 min-h-0 relative">
             {!isMounted || !data.interactionDurationData || data.interactionDurationData.length === 0 ? (

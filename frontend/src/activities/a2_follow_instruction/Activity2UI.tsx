@@ -33,7 +33,7 @@ export default function Activity2UI() {
   useEffect(() => {
     const initSession = async () => {
       try {
-        const res = await fetch(`http://localhost:8001/api/session/start?activity_id=A2`, { method: 'POST' });
+        const res = await fetch(`http://localhost:8001/api/session/start?activity_id=A2&force_new=${localStorage.getItem('forceNewSession') === 'true'}`, { method: 'POST' });
         const data = await res.json();
         setSessionId(data.session_id);
       } catch(e) { 

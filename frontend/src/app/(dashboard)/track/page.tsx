@@ -6,9 +6,10 @@ import { useState, useEffect } from "react";
 export default function TrackPage() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState<string>("");
 
   useEffect(() => {
-    fetch("http://localhost:8001/api/track/trends")
+    fetch(selectedDate ? `http://localhost:8001/api/track/trends?date=${selectedDate}` : "http://localhost:8001/api/track/trends")
       .then(res => res.json())
       .then(resData => {
         if (resData.history && Array.isArray(resData.history) && resData.history.length > 0) {
@@ -17,6 +18,8 @@ export default function TrackPage() {
             latency: d.response_time_sec ?? d.latency ?? null,
             duration: d.interaction_duration_sec ?? d.duration ?? null
           })));
+        } else {
+          setData([]);
         }
         setLoading(false);
       })
@@ -24,7 +27,17 @@ export default function TrackPage() {
         console.error(err);
         setLoading(false);
       });
-  }, []);
+  }, [selectedDate]);
+
+  const emptyData = [
+    {session: "S1", latency: null, duration: null},
+    {session: "S2", latency: null, duration: null},
+    {session: "S3", latency: null, duration: null},
+    {session: "S4", latency: null, duration: null},
+    {session: "S5", latency: null, duration: null}
+  ];
+
+  const chartData = data.length > 0 ? data : emptyData;
 
   return (
     <div className="flex flex-col h-full space-y-6">
@@ -46,30 +59,27 @@ export default function TrackPage() {
                 <h2 className="text-sm font-bold text-zinc-900">Response Latency Trend</h2>
                 <p className="text-[10px] text-zinc-500 uppercase tracking-wider mt-1">Response time across sessions</p>
               </div>
-              <div className="w-8 h-8 rounded bg-warning-bg flex items-center justify-center shrink-0">
-                <Clock className="w-4 h-4 text-warning-dark" />
-              </div>
+              <input 
+                type="date" 
+                className="text-xs text-zinc-600 bg-white border border-zinc-200 shadow-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer hover:bg-zinc-50 transition-colors shrink-0"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              />
             </div>
             
             <div className="flex-1 w-full relative">
-              {data.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" />
-                    <XAxis dataKey="session" axisLine={{ stroke: '#e4e4e7' }} tickLine={{ stroke: '#e4e4e7' }} tick={{ fontSize: 12, fill: '#71717a' }} dy={10} />
-                    <YAxis domain={[0, 100]} axisLine={{ stroke: '#e4e4e7' }} tickLine={{ stroke: '#e4e4e7' }} tick={{ fontSize: 12, fill: '#71717a' }} />
-                    <Tooltip 
-                      contentStyle={{ borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                      itemStyle={{ color: '#F59E0B', fontWeight: 600 }}
-                    />
-                    <Line type="monotone" dataKey="latency" stroke="#F59E0B" strokeWidth={3} dot={{ r: 4, fill: '#F59E0B', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <p className="text-sm text-zinc-500">No response latency data available yet.</p>
-                </div>
-              )}
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" />
+                  <XAxis dataKey="session" axisLine={{ stroke: '#e4e4e7' }} tickLine={{ stroke: '#e4e4e7' }} tick={{ fontSize: 12, fill: '#71717a' }} dy={10} />
+                  <YAxis domain={[0, 100]} axisLine={{ stroke: '#e4e4e7' }} tickLine={{ stroke: '#e4e4e7' }} tick={{ fontSize: 12, fill: '#71717a' }} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                    itemStyle={{ color: '#F59E0B', fontWeight: 600 }}
+                  />
+                  <Line type="monotone" dataKey="latency" stroke="#F59E0B" strokeWidth={3} dot={{ r: 4, fill: '#F59E0B', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
@@ -80,30 +90,27 @@ export default function TrackPage() {
                 <h2 className="text-sm font-bold text-zinc-900">Interaction Duration Trend</h2>
                 <p className="text-[10px] text-zinc-500 uppercase tracking-wider mt-1">Interaction duration across sessions</p>
               </div>
-              <div className="w-8 h-8 rounded bg-brand/10 flex items-center justify-center shrink-0">
-                <Timer className="w-4 h-4 text-brand" />
-              </div>
+              <input 
+                type="date" 
+                className="text-xs text-zinc-600 bg-white border border-zinc-200 shadow-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer hover:bg-zinc-50 transition-colors shrink-0"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              />
             </div>
             
             <div className="flex-1 w-full relative">
-              {data.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" />
-                    <XAxis dataKey="session" axisLine={{ stroke: '#e4e4e7' }} tickLine={{ stroke: '#e4e4e7' }} tick={{ fontSize: 12, fill: '#71717a' }} dy={10} />
-                    <YAxis domain={[0, 10]} axisLine={{ stroke: '#e4e4e7' }} tickLine={{ stroke: '#e4e4e7' }} tick={{ fontSize: 12, fill: '#71717a' }} />
-                    <Tooltip 
-                      contentStyle={{ borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                      itemStyle={{ color: '#176B9C', fontWeight: 600 }}
-                    />
-                    <Line type="monotone" dataKey="duration" stroke="#176B9C" strokeWidth={3} dot={{ r: 4, fill: '#176B9C', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <p className="text-sm text-zinc-500">No interaction duration data available yet.</p>
-                </div>
-              )}
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" />
+                  <XAxis dataKey="session" axisLine={{ stroke: '#e4e4e7' }} tickLine={{ stroke: '#e4e4e7' }} tick={{ fontSize: 12, fill: '#71717a' }} dy={10} />
+                  <YAxis domain={[0, 10]} axisLine={{ stroke: '#e4e4e7' }} tickLine={{ stroke: '#e4e4e7' }} tick={{ fontSize: 12, fill: '#71717a' }} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                    itemStyle={{ color: '#176B9C', fontWeight: 600 }}
+                  />
+                  <Line type="monotone" dataKey="duration" stroke="#176B9C" strokeWidth={3} dot={{ r: 4, fill: '#176B9C', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
 

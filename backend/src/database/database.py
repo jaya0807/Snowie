@@ -26,14 +26,15 @@ class Database:
 
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS sessions (
-                    session_id TEXT PRIMARY KEY,
+                    session_id TEXT,
                     participant_id TEXT,
                     start_time REAL,
                     end_time REAL,
                     activity_id TEXT,
                     difficulty TEXT,
                     accuracy REAL,
-                    response_time_sec REAL
+                    response_time_sec REAL,
+                    PRIMARY KEY (session_id, activity_id)
                 )
             ''')
 
@@ -119,7 +120,7 @@ class Database:
         start_time = start_time or _time.time()
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
-                "INSERT OR IGNORE INTO sessions (session_id, participant_id, start_time, activity_id, difficulty) VALUES (?,?,?,?,?)",
+                "INSERT OR REPLACE INTO sessions (session_id, participant_id, start_time, activity_id, difficulty) VALUES (?,?,?,?,?)",
                 (session_id, participant_id, start_time, activity_id, str(difficulty))
             )
 
@@ -134,8 +135,17 @@ class Database:
     def get_recent_sessions(self, participant_id: str, limit: int = 5) -> list:
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
+            # Group by session_id to get the master visit, returning the earliest start time and avg accuracy
             rows = conn.execute(
-                "SELECT * FROM sessions WHERE participant_id=? ORDER BY start_time DESC LIMIT ?",
+                """
+                SELECT session_id, participant_id, MIN(start_time) as start_time, MAX(end_time) as end_time, 
+                       GROUP_CONCAT(activity_id, ', ') as activity_id, AVG(accuracy) as accuracy, AVG(response_time_sec) as response_time_sec
+                FROM sessions 
+                WHERE participant_id=? 
+                GROUP BY session_id
+                ORDER BY MIN(start_time) DESC 
+                LIMIT ?
+                """,
                 (participant_id, limit)
             ).fetchall()
         return [dict(r) for r in rows]
@@ -262,7 +272,7 @@ class Database:
 
             # Total sessions
             total_sessions = conn.execute(
-                "SELECT COUNT(*) FROM sessions WHERE participant_id=?", (participant_id,)
+                "SELECT COUNT(DISTINCT session_id) FROM sessions WHERE participant_id=?", (participant_id,)
             ).fetchone()[0]
 
             # Average accuracy
@@ -334,8 +344,14 @@ class Database:
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             session = conn.execute(
-                "SELECT * FROM sessions WHERE session_id=?", (session_id,)
+                """SELECT session_id, participant_id, MIN(start_time) as start_time, MAX(end_time) as end_time, 
+                          GROUP_CONCAT(activity_id, ', ') as activity_id, AVG(accuracy) as accuracy, AVG(response_time_sec) as response_time_sec
+                   FROM sessions WHERE session_id=?""", (session_id,)
             ).fetchone()
+            
+            breakdown = conn.execute(
+                "SELECT activity_id, accuracy, response_time_sec FROM sessions WHERE session_id=? ORDER BY start_time ASC", (session_id,)
+            ).fetchall()
             events = conn.execute(
                 "SELECT * FROM events WHERE session_id=? ORDER BY timestamp ASC", (session_id,)
             ).fetchall()

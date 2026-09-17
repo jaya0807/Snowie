@@ -49,6 +49,10 @@ from activities.a6_controlled_challenge.logic import Activity6Logic
 # ═══════════════════════════════════════════════════════════════
 app = FastAPI(title="Observe AI API", version="2.0")
 
+# Initialize database tables on startup to prevent crashing on empty DBs
+from database.database import Database
+Database(os.path.join(os.path.dirname(__file__), "observe.db"))
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -197,10 +201,29 @@ async def websocket_endpoint(websocket: WebSocket):
 # Dashboard
 # ═══════════════════════════════════════════════════════════════
 @app.get("/api/dashboard")
-def get_dashboard_data(patient_id: str = "P1"):
+def get_dashboard_data(patient_id: str = "P1", date: str = None):
     db = Database(DB_PATH)
     metrics = db.get_dashboard_metrics(patient_id)
-    recent = db.get_recent_sessions(patient_id, limit=5)
+    
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        all_sessions = conn.execute(
+            "SELECT session_id, MIN(start_time) as start_time, MAX(end_time) as end_time, GROUP_CONCAT(activity_id, ', ') as activity_id, AVG(response_time_sec) as response_time_sec "
+            "FROM sessions WHERE participant_id=? GROUP BY session_id ORDER BY MIN(start_time) DESC", 
+            (patient_id,)
+        ).fetchall()
+        all_sessions = [dict(r) for r in all_sessions]
+        
+    if date:
+        filtered = []
+        for s in all_sessions:
+            start_ts = float(s["start_time"])
+            s_date = datetime.datetime.fromtimestamp(start_ts).strftime("%Y-%m-%d")
+            if s_date == date:
+                filtered.append(s)
+        recent = filtered[-10:] # last 10 of that day
+    else:
+        recent = all_sessions[:5]
 
     formatted_recent = []
     for s in recent:
@@ -316,10 +339,11 @@ def get_reports():
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
             """SELECT s.session_id as id, COALESCE(p.name, s.participant_id) as patient,
-                      s.start_time as date, s.activity_id
+                      MIN(s.start_time) as date, GROUP_CONCAT(s.activity_id, ', ') as activity_id
                FROM sessions s
                LEFT JOIN participants p ON s.participant_id = p.participant_id
-               ORDER BY s.start_time DESC"""
+               GROUP BY s.session_id
+               ORDER BY MIN(s.start_time) DESC"""
         ).fetchall()
     reports = []
     for row in rows:
@@ -366,9 +390,16 @@ def get_report_detail(report_id: str):
     ])
 
     # Populate template sections with real data
+    activities_str = session.get('activity_id', 'N/A')
+    
+    breakdown = session_data.get("activities_breakdown", [])
+    breakdown_str = " | ".join([f"{b['activity_id']}: {int(b['accuracy']*100)}% acc" for b in breakdown if b['accuracy'] is not None])
+    if breakdown_str:
+        breakdown_str = f" Breakdown: {breakdown_str}."
+        
     report_content["1_session_overview"]["content"] = (
-        f"Session {session_id[:8]} completed for Activity {session.get('activity_id', 'N/A')}. "
-        f"Child achieved {acc_str} accuracy. "
+        f"Session {session_id[:8]} completed for Activities: {activities_str}. "
+        f"Child achieved {acc_str} overall accuracy.{breakdown_str} "
         f"{frames} telemetry frames were captured during the session."
     )
     report_content["2_domain_observations"]["content"] = (
@@ -449,9 +480,23 @@ def get_recommendation(patient_id: str = "P1"):
 # Track — Progress Trends
 # ═══════════════════════════════════════════════════════════════
 @app.get("/api/track/trends")
-def get_trends(patient_id: str = "P1", activity_id: str = "A2"):
+def get_trends(patient_id: str = "P1", activity_id: str = "A2", date: str = None):
     tracker = ProgressTracker(db_path=DB_PATH)
-    return tracker.compute_trends(participant_id=patient_id, activity_id=activity_id)
+    data = tracker.compute_trends(participant_id=patient_id, activity_id=activity_id)
+    
+    if date and data.get("history"):
+        filtered = []
+        for s in data["history"]:
+            try:
+                start_ts = float(s["start_time"])
+                s_date = datetime.datetime.fromtimestamp(start_ts).strftime("%Y-%m-%d")
+                if s_date == date:
+                    filtered.append(s)
+            except Exception:
+                pass
+        data["history"] = filtered
+        
+    return data
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -490,8 +535,16 @@ active_sessions: dict = {}
 
 
 @app.post("/api/session/start")
-def start_session(activity_id: str, patient_id: str = "P1"):
-    session_id = f"sess_{uuid.uuid4().hex[:8]}"
+def start_session(activity_id: str, patient_id: str = "P1", force_new: bool = False):
+    start_time = time.time()
+    with sqlite3.connect(DB_PATH) as conn:
+        row = conn.execute("SELECT session_id FROM sessions WHERE participant_id=? ORDER BY start_time DESC LIMIT 1", (patient_id,)).fetchone()
+        if row and not force_new:
+            session_id = row[0]
+        else:
+            count = conn.execute("SELECT COUNT(DISTINCT session_id) FROM sessions").fetchone()[0]
+            session_id = f"sess-{count + 1:02d}"
+            
     runtime = ActivityRuntime(session_id, activity_id, "instruction_following", "Low")
     runtime.start()
     active_sessions[session_id] = runtime
@@ -537,10 +590,21 @@ class EndSessionReq(BaseModel):
 
 @app.post("/api/sessions/start")
 def api_start_session(req: StartSessionReq):
-    session_id = f"S-{uuid.uuid4().hex[:8]}"
     start_time = time.time()
+    with sqlite3.connect(DB_PATH) as conn:
+        # Check if there is a session today (last 12 hours)
+        row = conn.execute("SELECT session_id, start_time FROM sessions WHERE participant_id=? ORDER BY start_time DESC LIMIT 1", (req.participant_id,)).fetchone()
+        
+        if row and (start_time - float(row[1])) < 43200:
+            session_id = row[0]
+        else:
+            count = conn.execute("SELECT COUNT(DISTINCT session_id) FROM sessions").fetchone()[0]
+            session_id = f"sess-{count + 1:02d}"
+            
     db = Database(DB_PATH)
     db.add_participant(req.participant_id, "Child", 5, start_time)
+    
+    # Try to start session. If they restart the exact same activity today, it replaces the old row due to INSERT OR REPLACE
     db.start_session(session_id, req.participant_id, start_time, req.activity_id, req.difficulty)
     return {"session_id": session_id, "start_time": start_time}
 
@@ -558,9 +622,7 @@ def api_end_session(session_id: str, req: EndSessionReq):
     end_time = time.time()
     db.end_session(session_id, end_time, req.accuracy, req.response_time_sec)
 
-    # Run full session analysis and update goals if accuracy is good
-    analyzer = SessionAnalyzer(session_id=session_id, db_path=DB_PATH)
-    summary = analyzer.analyze()
+    # Master session analysis is now triggered manually via /api/master/end
 
     # Auto-advance goal baseline if accuracy improved
     if req.accuracy >= 0.7:
@@ -701,3 +763,29 @@ def parent_login_endpoint(data: ParentLoginRequest):
 @app.post("/api/auth/logout")
 def logout_endpoint():
     return {"status": "success", "message": "Logged out successfully"}
+
+@app.post("/api/master/start")
+def master_start():
+    with sqlite3.connect(DB_PATH) as conn:
+        count = conn.execute("SELECT COUNT(DISTINCT session_id) FROM sessions").fetchone()[0]
+        session_id = f"sess-{count + 1:02d}"
+    return {"session_id": session_id}
+
+@app.post("/api/master/resume")
+def master_resume(patient_id: str = "P1"):
+    with sqlite3.connect(DB_PATH) as conn:
+        row = conn.execute("SELECT session_id FROM sessions WHERE participant_id=? ORDER BY start_time DESC LIMIT 1", (patient_id,)).fetchone()
+        session_id = row[0] if row else "sess-01"
+    return {"session_id": session_id}
+
+@app.post("/api/master/end")
+def master_end(session_id: str):
+    analyzer = SessionAnalyzer(session_id=session_id, db_path=DB_PATH)
+    analyzer.analyze()
+    return {"status": "analyzed"}
+
+@app.get("/api/master/status")
+def master_status(patient_id: str = "P1"):
+    with sqlite3.connect(DB_PATH) as conn:
+        count = conn.execute("SELECT COUNT(DISTINCT session_id) FROM sessions WHERE participant_id=?", (patient_id,)).fetchone()[0]
+    return {"has_history": count > 0}

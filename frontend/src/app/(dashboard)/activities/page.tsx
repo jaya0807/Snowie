@@ -1,7 +1,8 @@
 "use client";
+import { useToast } from "@/components/ui/Toast";
 
 import { useRouter } from "next/navigation";
-import { Play, Settings2, BarChart2, CheckCircle2, ShieldAlert } from "lucide-react";
+import { Play, Settings2, BarChart2, CheckCircle2, ShieldAlert, Activity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
 import { RotateCcw } from "lucide-react";
@@ -35,6 +36,7 @@ const ACTIVITY_IMAGES: Record<string, StaticImageData> = {
 
 export default function ActivitiesPage() {
   const router = useRouter();
+  const { toast } = useToast();
   
     const [activities] = useState<any[]>([
     { id: "A1", name: ACTIVITY_OVERRIDES["A1"].name, domain: "social", description: ACTIVITY_OVERRIDES["A1"].description, difficulty_levels: [1] },
@@ -46,16 +48,80 @@ export default function ActivitiesPage() {
   ]);
   
   const [pausedActivity, setPausedActivity] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [masterActive, setMasterActive] = useState(false);
+  const [hasHistory, setHasHistory] = useState(false);
 
   useEffect(() => {
-    // Check if the user abandoned an activity mid-session
     const saved = localStorage.getItem("paused_activity");
-    if (saved) {
-      setPausedActivity(saved);
+    if (saved) setPausedActivity(saved);
+
+    const checkStatus = async () => {
+      try {
+        const res = await fetch("http://localhost:8001/api/master/status");
+        const data = await res.json();
+        setHasHistory(data.has_history);
+      } catch (e) {}
+    };
+    checkStatus();
+
+    const isMasterActive = localStorage.getItem("master_session_active") === "true";
+    if (!isMasterActive) {
+      setShowModal(true);
+    } else {
+      setMasterActive(true);
     }
   }, []);
 
-  const launchActivity = (activityId: string, isResume: boolean = false) => {
+  const handleStartNew = async () => {
+    try {
+      const res = await fetch("http://localhost:8001/api/master/start", { method: "POST" });
+      const data = await res.json();
+      localStorage.setItem("master_session_id", data.session_id);
+      localStorage.setItem("master_session_active", "true");
+      localStorage.setItem("forceNewSession", "true");
+      setMasterActive(true);
+      setShowModal(false);
+      toast(`New Master Session (${data.session_id}) started.`);
+    } catch(e) {
+      toast("Error starting session");
+    }
+  };
+
+  const handleResume = async () => {
+    try {
+      const res = await fetch("http://localhost:8001/api/master/resume", { method: "POST" });
+      const data = await res.json();
+      localStorage.setItem("master_session_id", data.session_id);
+      localStorage.setItem("master_session_active", "true");
+      localStorage.removeItem("forceNewSession");
+      setMasterActive(true);
+      setShowModal(false);
+      toast(`Resumed Session ${data.session_id}`);
+    } catch(e) {
+      toast("Error resuming session");
+    }
+  };
+
+  const handleEndSession = async () => {
+    const sessionId = localStorage.getItem("master_session_id");
+    toast("Ending session & generating AI Report...");
+    try {
+      if (sessionId) {
+        await fetch(`http://localhost:8001/api/master/end?session_id=${sessionId}`, { method: "POST" });
+      }
+      localStorage.removeItem("master_session_active");
+      localStorage.removeItem("master_session_id");
+      localStorage.removeItem("forceNewSession");
+      toast("AI Report ready!");
+      router.push("/dashboard");
+    } catch(e) {
+      toast("Error ending session");
+    }
+  };
+
+    const launchActivity = (activityId: string, isResume: boolean = false) => {
+    toast(`Activity ${activityId} ${isResume ? 'resumed' : 'launched'} successfully`);
     // Save to local storage so we know they started it
     localStorage.setItem("paused_activity", activityId);
     router.push(`/child?activity=${activityId}${isResume ? '&resume=true' : ''}`);
@@ -74,7 +140,42 @@ export default function ActivitiesPage() {
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Activity Library</h1>
           <p className="text-sm text-zinc-500 mt-1">Select an activity to launch.</p>
         </div>
+        {masterActive && (
+          <button 
+            onClick={handleEndSession}
+            className="px-4 py-2 rounded-lg font-semibold transition-colors bg-red-100 text-red-700 hover:bg-red-200"
+          >
+            End Session
+          </button>
+        )}
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 bg-brand/10 rounded-full flex items-center justify-center">
+                <Activity className="w-6 h-6 text-brand" />
+              </div>
+            </div>
+            <h2 className="text-xl font-bold text-center text-zinc-900 mb-2">Master Session</h2>
+            <p className="text-zinc-500 text-center text-sm mb-6">How would you like to proceed with the clinical session?</p>
+            <div className="flex flex-col gap-3">
+              <button onClick={handleStartNew} className="w-full btn-primary py-3 rounded-lg font-semibold">
+                Start New Session
+              </button>
+              <button 
+                onClick={handleResume} 
+                disabled={!hasHistory}
+                className={`w-full py-3 rounded-lg font-semibold transition-colors ${hasHistory ? "bg-zinc-100 hover:bg-zinc-200 text-zinc-700" : "bg-zinc-100 text-zinc-400 cursor-not-allowed opacity-50"}`}
+                title={!hasHistory ? "No previous sessions found to resume" : ""}
+              >
+                Resume Session
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {activities.length === 0 ? (
         <div className="p-8 text-center text-zinc-500">Loading activities...</div>
@@ -93,9 +194,7 @@ export default function ActivitiesPage() {
                 <div className="absolute inset-0 bg-black/5 z-0" />
 
                 <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-                  <Badge variant="outline" className="bg-white/90 backdrop-blur text-[10px] text-brand border-none font-bold uppercase tracking-wider shadow-sm">
-                    {act.domain.replace("_", " ")}
-                  </Badge>
+
                   {pausedActivity === act.id && (
                     <Badge className="bg-warning-dark text-white border-none font-bold text-[10px] uppercase tracking-wider shadow-sm">
                       In Progress
@@ -116,20 +215,15 @@ export default function ActivitiesPage() {
                   {act.description}
                 </p>
 
-                <div className="mt-6 space-y-3 pt-4 border-t border-black/5">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-zinc-500 flex items-center gap-1.5"><Settings2 className="w-3.5 h-3.5" /> Levels</span>
-                    <span className="font-medium text-zinc-900">{act.difficulty_levels.length} Available</span>
-                  </div>
-                </div>
+
 
                 <div className="mt-6 flex gap-3">
                   {pausedActivity === act.id ? (
                     <>
-                      <button onClick={() => launchActivity(act.id, true)} className="flex-1 bg-warning-bg text-warning-dark hover:bg-warning-light border border-warning-light py-2 rounded-xl text-sm font-bold transition-colors">
+                      <button onClick={() => launchActivity(act.id, true)} className="flex-1 btn-warning py-2 text-sm font-semibold transition-colors">
                         Resume Activity
                       </button>
-                      <button onClick={(e) => clearProgress(e, act.id)} className="px-3 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-600 rounded-xl transition-colors" title="Restart from beginning">
+                      <button onClick={(e) => clearProgress(e, act.id)} className="px-3 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-600 rounded-lg transition-colors" title="Restart from beginning">
                         <RotateCcw className="w-4 h-4" />
                       </button>
                     </>
