@@ -1,119 +1,54 @@
+"""
+Observe AI — FastAPI Backend
+────────────────────────────
+Architecture:
+  Child device  →  /api/ws/capture/{session_id}  →  Saves to DB + broadcasts to parents
+  Parent device ←  /api/ws/session               ←  Receives live telemetry + video frame
+
+All AI tracking runs client-side (MediaPipe JS in browser).
+Report generation uses Amazon Bedrock (Claude).
+"""
+
 import sys
 import os
+import time
+import uuid
+import json
+import sqlite3
+import datetime
+from typing import List, Optional
+
+# Ensure src/ is on path so relative imports work
 sys.path.append(os.path.dirname(__file__))
 
-from database.database import Database
-import time
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-import sqlite3
-import os
+from pydantic import BaseModel
 
-app = FastAPI()
-
-from fastapi import WebSocket, WebSocketDisconnect
-import json
-
-@app.websocket("/api/ws/capture/{session_id}")
-async def websocket_capture(websocket: WebSocket, session_id: str):
-    await websocket.accept()
-    from database.database import Database
-    import time
-    db = Database(DB_PATH)
-    try:
-        consecutive_distracted = 0
-        consecutive_unstable = 0
-        while True:
-            data = await websocket.receive_text()
-            payload = json.loads(data)
-            metrics = payload.get("metrics", {})
-            pitch = metrics.get("pitch", 0) or 0
-            yaw = metrics.get("yaw", 0) or 0
-            ear = metrics.get("ear", 0) or 0
-            blinks = metrics.get("blinks", 0) or 0
-            aversions = metrics.get("aversions", 0) or 0
-            flapping_events = metrics.get("flappingEvents", 0) or 0
-            posture_stable = metrics.get("postureStable", 1)
-            status = metrics.get("status", "Unknown")
-            
-            # Save full telemetry to database
-            db.insert_telemetry(
-                session_id=session_id,
-                timestamp=time.time(),
-                pitch=pitch,
-                yaw=yaw,
-                roll=0,
-                status=status,
-                ear=ear,
-                blinks=blinks,
-                aversions=aversions,
-                flapping_events=flapping_events,
-                posture_stable=1 if posture_stable else 0
-            )
-            
-            # Anomaly Detection: Gaze Aversion
-            is_distracted = "Distracted" in status or "Avoidance" in status
-            if is_distracted:
-                consecutive_distracted += 1
-            else:
-                consecutive_distracted = 0
-            if consecutive_distracted == 5:
-                db.insert_event(session_id, time.time(), "GAZE_AVERSION", "HIGH",
-                                f"Yaw={yaw:.1f}, Pitch={pitch:.1f}")
-                consecutive_distracted = 0
-
-            # Anomaly Detection: Posture Instability
-            if not posture_stable:
-                consecutive_unstable += 1
-            else:
-                consecutive_unstable = 0
-            if consecutive_unstable == 6:  # ~3 seconds
-                db.insert_event(session_id, time.time(), "POSTURE_UNSTABLE", "MEDIUM",
-                                "Head position unstable for 3+ seconds")
-                consecutive_unstable = 0
-
-            # Anomaly Detection: Hand Flapping
-            if metrics.get("newFlap", False):
-                db.insert_event(session_id, time.time(), "HAND_FLAPPING", "HIGH",
-                                "Rapid wrist oscillation detected by MediaPipe Pose")
-
-            # Anomaly Detection: Body Rocking
-            if metrics.get("newRock", False):
-                db.insert_event(session_id, time.time(), "BODY_ROCKING", "HIGH",
-                                "Rhythmic shoulder oscillation detected by MediaPipe Pose")
-
-            # Anomaly Detection: Wrist Posturing
-            if metrics.get("newPosture", False):
-                db.insert_event(session_id, time.time(), "WRIST_POSTURING", "MEDIUM",
-                                "Elevated wrists with low velocity detected by MediaPipe Pose")
-
-            # Anomaly Detection: Finger Flicking
-            if metrics.get("newFlick", False):
-                db.insert_event(session_id, time.time(), "FINGER_FLICKING", "MEDIUM",
-                                "Rapid thumb-index oscillation detected by MediaPipe Hands")
-
-            # Anomaly Detection: Head Tic
-            if metrics.get("newTic", False):
-                db.insert_event(session_id, time.time(), "HEAD_TIC", "HIGH",
-                                "Rapid head yaw/pitch oscillation detected")
-                
-            # Broadcast live to parent monitor
-            try:
-                msg = {
-                    "type": "telemetry",
-                    "metrics": metrics,
-                    "session_id": session_id,
-                    "image": payload.get("image")
-                }
-                await manager.broadcast(json.dumps(msg))
-            except Exception as e:
-                print(f"Broadcast error: {e}")
-            # You could also broadcast this to the parent monitor here
-    except WebSocketDisconnect:
-        print(f"Capture stream disconnected for {session_id}")
+from database.database import Database
+from analytics.evidence_engine import EvidenceEngine
+from analytics.session_analyzer import SessionAnalyzer
+from reporting.report_templates import ReportTemplates
+from reporting.report_generator import ReportGenerator
+from grow.goal_engine import GoalEngine
+from grow.recommendation_engine import RecommendationEngine
+from track.progress_tracker import ProgressTracker
+from activity.activity_engine import ActivityRuntime
+from activity.scoring import ScoringEngine
+from activity.activity_definitions import ACTIVITIES
+from activities.a1_natural_interaction.logic import Activity1Logic
+from activities.a2_follow_instruction.logic import Activity2Logic
+from activities.a3_target_finding.logic import Activity3Logic
+from activities.a4_imitation.logic import Activity4Logic
+from activities.a5_emotion_social.logic import Activity5Logic
+from activities.a6_controlled_challenge.logic import Activity6Logic
 
 
-# Allow CORS so Next.js (localhost:3000) can fetch data from FastAPI (localhost:8000)
+# ═══════════════════════════════════════════════════════════════
+# App + CORS
+# ═══════════════════════════════════════════════════════════════
+app = FastAPI(title="Observe AI API", version="2.0")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -122,296 +57,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "observe.db")
-
-@app.get("/api/dashboard")
-def get_dashboard_data(patient_id: str = "P1"):
-    from database.database import Database
-    import datetime
-    db = Database(DB_PATH)
-    recent = db.get_recent_sessions(patient_id, limit=5)
-    
-    formatted_recent = []
-    for s in recent:
-        # Calculate duration
-        try:
-            start = float(s["start_time"])
-            end = float(s["end_time"])
-            dur_min = int((end - start) / 60)
-            if dur_min < 1: dur_min = 1
-            dt = datetime.datetime.fromtimestamp(start).strftime("%b %d, %H:%M")
-        except:
-            dur_min = 5
-            dt = "Recently"
-            
-        acc = s.get("accuracy")
-        acc_str = f"{int(acc*100)}%" if acc is not None else "N/A"
-            
-        formatted_recent.append({
-            "id": s["session_id"][:8],
-            "activity": f"Activity ({s['activity_id']})",
-            "time": dt,
-            "duration": f"{dur_min}m",
-            "accuracy": acc_str,
-            "status": "Completed"
-        })
-
-    
-    # Real DB query for telemetry
-    summary = db.get_telemetry_summary("test_session")
-    if summary and summary["total_points"] > 0:
-        eye_tracking = f"{summary['focus_percent']}%"
-        head_orientation_trend = f"{summary['avoidance_events']} Avoidance Events"
-    else:
-        eye_tracking = "82%" # Fallback
-        head_orientation_trend = "2 Avoidance Events" # Fallback
-
-    # Return actual database overview data
-
-    return {
-        "stats": {
-            "totalSessions": {"value": len(recent), "trend": "+2 this week", "isPositive": True, "label": "Total Sessions"},
-            "headOrientation": {"value": "Stable", "trend": head_orientation_trend, "isPositive": True, "label": "Posture Stability"},
-            "bodyMovement": {"value": "Calm", "handFlapping": "2 instances", "repeatedMovements": "None", "label": "Body Movement"},
-            "eyeTracking": {"value": eye_tracking, "trend": "+5% from last week", "isPositive": True, "label": "Visual Focus"}
-        },
-        "recentSessions": formatted_recent,
-        "chartData": [],
-        "responseLatencyData": [
-            {"name": "Session 1", "latency": None},
-            {"name": "Session 2", "latency": None},
-            {"name": "Session 3", "latency": None},
-            {"name": "Session 4", "latency": None},
-            {"name": "Session 5", "latency": None}
-        ],
-        "interactionDurationData": [
-            {"name": "Session 1", "duration": None},
-            {"name": "Session 2", "duration": None},
-            {"name": "Session 3", "duration": None},
-            {"name": "Session 4", "duration": None},
-            {"name": "Session 5", "duration": None}
-        ]
-    }
-@app.get("/api/profiles")
-def get_profiles():
-    if not os.path.exists(DB_PATH):
-        return {"patient": {"name": "No Patient", "age": 0}, "longitudinalData": [], "reports": []}
-    
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM participants LIMIT 1')
-        row = cursor.fetchone()
-        patient = dict(row) if row else {"name": "No Patient", "age": 0}
-
-    return {
-        "patient": patient,
-        "longitudinalData": [],
-        "reports": []
-    }
-
-@app.get("/api/reports")
-def get_reports():
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        cursor.execute('''
-            SELECT s.session_id as id, p.name as patient, s.start_time as date
-            FROM sessions s
-            JOIN participants p ON s.participant_id = p.participant_id
-            ORDER BY s.start_time DESC
-        ''')
-        reports = []
-        for row in cursor.fetchall():
-            reports.append({
-                "id": f"R-{row['id']}", 
-                "patient": row['patient'], 
-                "date": row['date'], 
-                "type": "Session Summary", 
-                "status": "Reviewed"
-            })
-            
-    return {"reports": reports}
-
-# --- GROW API ---
-from grow.goal_engine import GoalEngine
-from grow.recommendation_engine import RecommendationEngine
-from track.progress_tracker import ProgressTracker
+# DB path — configurable via env var for AWS deployment
+DB_PATH = os.environ.get(
+    "DB_PATH",
+    os.path.join(os.path.dirname(__file__), "observe.db")
+)
 
 
-@app.get("/api/grow/recommend")
-def get_recommendation(patient_id: str = "P1"):
-    goal_engine = GoalEngine(db_connection=DB_PATH)
-    goal = goal_engine.create_goal(patient_id, "instruction_following", "Improve completion of two-step instructions", 0.60, 0.80)
-    
-    rec_engine = RecommendationEngine()
-    # Mock recent performance for demo
-    recent_performance = {"accuracy": 0.85} 
-    
-    recommendation = rec_engine.recommend_activity(goal, recent_performance)
-    
-    return {
-        "recommendation": recommendation,
-        "reason": f"Patient accuracy was {recent_performance['accuracy']*100}% recently, adapting difficulty."
-    }
-
-# --- TRACK API ---
-@app.get("/api/track/trends")
-def get_trends(patient_id: str = "P1", activity_id: str = "A2"):
-    from database.database import Database
-    db = Database(DB_PATH)
-    history = db.get_session_history(patient_id, activity_id)
-    
-    # Real data only - no mock history injected
-        
-    # Mock fallback for visual purposes if no real sessions exist
-    if not history:
-        history = [
-            {"session_id": "S1", "accuracy": None, "response_time_sec": None},
-            {"session_id": "S2", "accuracy": None, "response_time_sec": None},
-            {"session_id": "S3", "accuracy": None, "response_time_sec": None},
-            {"session_id": "S4", "accuracy": None, "response_time_sec": None},
-            {"session_id": "S5", "accuracy": None, "response_time_sec": None}
-        ]
-
-    trend = "Stable"
-    if len(history) >= 2:
-        acc_last = history[-1].get("accuracy")
-        acc_first = history[0].get("accuracy")
-        if acc_last is not None and acc_first is not None:
-            if acc_last > acc_first:
-                trend = "Improving"
-            elif acc_last < acc_first:
-                trend = "Declining"
-            
-    response_times = [h.get("response_time_sec") for h in history if h.get("response_time_sec") is not None]
-    avg_resp = sum(response_times) / len(response_times) if response_times else 0
-
-    return {
-        "activity_id": activity_id,
-        "sessions_supported": len(history),
-        "accuracy_trend": trend,
-        "average_response_time": avg_resp,
-        "history": history
-    }
-
-# --- SESSION & ACTIVITY API ---
-from activity.activity_engine import ActivityRuntime
-from activity.scoring import ScoringEngine
-
-# Store active sessions in memory for the demo
-active_sessions = {}
-
-@app.post("/api/session/start")
-def start_session(activity_id: str, patient_id: str = "P1"):
-    import uuid
-    session_id = f"sess_{uuid.uuid4().hex[:8]}"
-    
-    runtime = ActivityRuntime(session_id, activity_id, "instruction_following", "Low")
-    runtime.start()
-    
-    active_sessions[session_id] = runtime
-    
-    # Save to SQLite
-    db = Database(DB_PATH)
-    # Ensure participant exists
-    db.add_participant(patient_id, "Child", 5, time.time())
-    db.start_session(session_id, patient_id, time.time(), activity_id, "Low")
-    
-    return {"status": "started", "session_id": session_id}
-
-@app.post("/api/session/end")
-def end_session(session_id: str):
-    if session_id not in active_sessions:
-        return {"error": "Session not found"}
-        
-    runtime = active_sessions[session_id]
-    
-    import random
-    # Generate somewhat realistic but random scores for the demo
-    accuracy = random.choice([0.33, 0.66, 1.0])
-    response_time = round(random.uniform(2.0, 6.0), 1)
-    
-    result = runtime.finish(completion_status="COMPLETED", accuracy=accuracy, response_time=response_time)
-    
-    del active_sessions[session_id]
-    
-    # Save to SQLite
-    db = Database(DB_PATH)
-    db.end_session(session_id, time.time(), accuracy, response_time)
-    
-    return {"status": "ended", "result": result}
-
-# --- REPORT API ---
-from analytics.evidence_engine import EvidenceEngine
-from reporting.report_templates import ReportTemplates
-
-@app.get("/api/reports/{report_id}")
-def get_report_detail(report_id: str):
-    from database.database import Database
-    import sqlite3
-    db = Database(DB_PATH)
-    
-    session_id = report_id.replace("R-", "")
-    
-    with sqlite3.connect(db.db_path) as conn:
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        
-        cursor.execute("SELECT * FROM sessions WHERE session_id = ?", (session_id,))
-        session = cursor.fetchone()
-        
-        cursor.execute("SELECT * FROM events WHERE session_id = ?", (session_id,))
-        events = [dict(r) for r in cursor.fetchall()]
-        
-        cursor.execute("SELECT COUNT(*) FROM telemetry WHERE session_id = ?", (session_id,))
-        telemetry_count = cursor.fetchone()[0]
-        
-    evidence = EvidenceEngine()
-    insight = evidence.analyze_repetition_context(events)
-    
-    report_content = ReportTemplates.get_empty_template()
-    
-    if not session:
-        report_content["1_session_overview"]["content"] = "Session data not found."
-        return {"id": report_id, "sections": report_content}
-        
-    # Phase 3: Dynamic AI Report Generation using real DB data
-    acc = session.get("accuracy")
-    acc_str = f"{int(acc*100)}%" if acc is not None else "N/A"
-    dur = session.get("response_time_sec")
-    
-    report_content["1_session_overview"]["content"] = f"Session {session_id} completed. Child achieved {acc_str} accuracy during activity {session.get('activity_id')}."
-    report_content["2_domain_observations"]["content"] = f"Average response latency was {dur} seconds. The system captured {telemetry_count} telemetry frames."
-    
-    gaze_aversions = [e for e in events if e.get("event_type") == "GAZE_AVERSION"]
-    
-    if gaze_aversions:
-        report_content["3_key_events"]["content"] = f"Identified {len(gaze_aversions)} Gaze Aversion event(s) during gameplay."
-    else:
-        report_content["3_key_events"]["content"] = "Child maintained excellent visual focus. No major gaze aversions detected."
-    
-    if insight:
-        report_content["4_contextual_patterns"]["content"] = (
-            f"{insight['statement']} "
-            f"Evidence: {insight['evidence']['total_events']} total events recorded. "
-            f"({insight['evidence']['high_demand_events']} in High Demand)."
-        )
-    else:
-        report_content["4_contextual_patterns"]["content"] = "No repetitive movement patterns were observed in this session."
-    
-    report_content["5_longitudinal_trends"]["content"] = "Awaiting sufficient data to calculate longitudinal trend across sessions."
-    report_content["6_professional_review"]["content"] = "Reviewer Notes: Pending clinical review."
-    
-    return {"id": report_id, "sections": report_content}
-
-# --- WEBSOCKET REAL-TIME SYNC ---
-from fastapi import WebSocket, WebSocketDisconnect
-from typing import List
-import json
-
-# from perception_pipeline import PerceptionPipeline
-
+# ═══════════════════════════════════════════════════════════════
+# WebSocket Connection Manager
+# ═══════════════════════════════════════════════════════════════
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
@@ -425,19 +80,95 @@ class ConnectionManager:
             self.active_connections.remove(websocket)
 
     async def broadcast(self, message: str):
-        for connection in self.active_connections:
+        for connection in list(self.active_connections):
             try:
                 await connection.send_text(message)
             except Exception:
-                pass
+                self.disconnect(connection)
+
 
 manager = ConnectionManager()
 
 
-# Hard bypass MediaPipe to prevent Apple Silicon SIGABRT
-pipeline = None
-print("Warning: PerceptionPipeline disabled due to architecture incompatibility")
+# ═══════════════════════════════════════════════════════════════
+# WS: Child capture → DB → broadcast to parent
+# ═══════════════════════════════════════════════════════════════
+@app.websocket("/api/ws/capture/{session_id}")
+async def websocket_capture(websocket: WebSocket, session_id: str):
+    await websocket.accept()
+    db = Database(DB_PATH)
+    consecutive_distracted = 0
+    consecutive_unstable = 0
+    try:
+        while True:
+            data = await websocket.receive_text()
+            payload = json.loads(data)
+            metrics = payload.get("metrics", {})
 
+            pitch             = metrics.get("pitch", 0) or 0
+            yaw               = metrics.get("yaw", 0) or 0
+            ear               = metrics.get("ear", 0) or 0
+            blinks            = metrics.get("blinks", 0) or 0
+            aversions         = metrics.get("aversions", 0) or 0
+            flapping_events   = metrics.get("flappingEvents", 0) or 0
+            posture_stable    = metrics.get("postureStable", True)
+            status            = metrics.get("status", "Unknown")
+
+            # Persist full telemetry row
+            db.insert_telemetry(
+                session_id=session_id,
+                timestamp=time.time(),
+                pitch=pitch, yaw=yaw, roll=0, status=status,
+                ear=ear, blinks=blinks, aversions=aversions,
+                flapping_events=flapping_events,
+                posture_stable=1 if posture_stable else 0,
+            )
+
+            # ── Clinical anomaly detection ────────────────────────────
+            # Gaze aversion (5 consecutive distracted frames ≈ 2.5 s)
+            is_distracted = "Distracted" in status or "Avoidance" in status
+            consecutive_distracted = (consecutive_distracted + 1) if is_distracted else 0
+            if consecutive_distracted == 5:
+                db.insert_event(session_id, time.time(), "GAZE_AVERSION", "HIGH",
+                                f"Yaw={yaw:.1f}, Pitch={pitch:.1f}")
+                consecutive_distracted = 0
+
+            # Posture instability (6 consecutive unstable frames ≈ 3 s)
+            consecutive_unstable = (consecutive_unstable + 1) if not posture_stable else 0
+            if consecutive_unstable == 6:
+                db.insert_event(session_id, time.time(), "POSTURE_UNSTABLE", "MEDIUM",
+                                "Head position unstable for 3+ seconds")
+                consecutive_unstable = 0
+
+            # One-shot motor events (frontend already debounces)
+            for flag, etype, sev, detail in [
+                ("newFlap",    "HAND_FLAPPING",   "HIGH",   "Rapid wrist oscillation"),
+                ("newRock",    "BODY_ROCKING",    "HIGH",   "Rhythmic shoulder oscillation"),
+                ("newPosture", "WRIST_POSTURING", "MEDIUM", "Elevated wrists, low velocity"),
+                ("newFlick",   "FINGER_FLICKING", "MEDIUM", "Rapid thumb-index oscillation"),
+                ("newTic",     "HEAD_TIC",        "HIGH",   "Rapid involuntary head movement"),
+            ]:
+                if metrics.get(flag, False):
+                    db.insert_event(session_id, time.time(), etype, sev, detail)
+
+            # ── Broadcast to parent dashboard ─────────────────────────
+            try:
+                await manager.broadcast(json.dumps({
+                    "type":       "telemetry",
+                    "metrics":    metrics,
+                    "session_id": session_id,
+                    "image":      payload.get("image"),
+                }))
+            except Exception as e:
+                print(f"[Broadcast error] {e}")
+
+    except WebSocketDisconnect:
+        print(f"[WS capture] Disconnected: {session_id}")
+
+
+# ═══════════════════════════════════════════════════════════════
+# WS: Parent session monitor
+# ═══════════════════════════════════════════════════════════════
 @app.websocket("/api/ws/session")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
@@ -446,96 +177,402 @@ async def websocket_endpoint(websocket: WebSocket):
             data_str = await websocket.receive_text()
             try:
                 data = json.loads(data_str)
-            except Exception as e:
-                print(f"[WS] JSON parse error: {e}")
+            except Exception:
                 continue
-            
+
             msg_type = data.get("type")
-            
-            if msg_type == "frame":
-                try:
-                    if pipeline is None:
-                        continue
-                    telemetry = pipeline.process_base64_frame(data["image"])
-                    a4_success = telemetry.pop("a4_success_event", None)
-                    await websocket.send_text(json.dumps(telemetry))
-                    if a4_success:
-                        print(f"[WS] Sending pose_success: {a4_success}")
-                        await manager.broadcast(json.dumps(a4_success))
-                except Exception as e:
-                    print(f"[WS] Frame processing error: {e}")
-                    # Do NOT break — keep connection alive for next frame
-                    continue
-                    
-            elif msg_type == "set_target_pose":
-                try:
-                    pose = data.get("pose")
-                    print(f"[WS] set_target_pose received: {pose}")
-                    if pipeline:
-                        pipeline.set_target_pose(pose)
-                        print(f"[WS] Target pose set to: {pose}")
-                except Exception as e:
-                    print(f"[WS] set_target_pose error: {e}")
-                    
-            elif msg_type == "session_end":
+            if msg_type == "session_end":
                 try:
                     await manager.broadcast(json.dumps({"type": "session_end", "sessionActive": False}))
                 except Exception as e:
-                    print(f"[WS] session_end error: {e}")
-            
+                    print(f"[WS session] session_end broadcast error: {e}")
     except WebSocketDisconnect:
-        print("[WS] Client disconnected")
         manager.disconnect(websocket)
     except Exception as e:
-        print(f"[WS] Fatal connection error: {e}")
+        print(f"[WS session] Fatal error: {e}")
         manager.disconnect(websocket)
 
+
+# ═══════════════════════════════════════════════════════════════
+# Dashboard
+# ═══════════════════════════════════════════════════════════════
+@app.get("/api/dashboard")
+def get_dashboard_data(patient_id: str = "P1"):
+    db = Database(DB_PATH)
+    metrics = db.get_dashboard_metrics(patient_id)
+    recent = db.get_recent_sessions(patient_id, limit=5)
+
+    formatted_recent = []
+    for s in recent:
+        try:
+            start = float(s["start_time"])
+            end = float(s["end_time"] or start + 300)
+            dur_min = max(1, int((end - start) / 60))
+            dt = datetime.datetime.fromtimestamp(start).strftime("%b %d, %H:%M")
+        except Exception:
+            dur_min = 5
+            dt = "Recently"
+
+        acc = s.get("accuracy")
+        acc_str = f"{int(acc * 100)}%" if acc is not None else "N/A"
+        formatted_recent.append({
+            "id":       s["session_id"][:8],
+            "activity": f"Activity ({s['activity_id']})" if s.get("activity_id") else "Activity",
+            "time":     dt,
+            "duration": f"{dur_min}m",
+            "accuracy": acc_str,
+            "status":   "Completed",
+        })
+
+    # Build chart data from real history
+    response_latency_data = []
+    interaction_duration_data = []
+    for i, s in enumerate(reversed(recent), start=1):
+        label = f"Session {i}"
+        response_latency_data.append({
+            "name":    label,
+            "latency": s.get("response_time_sec"),
+        })
+        try:
+            start = float(s["start_time"])
+            end = float(s["end_time"] or start)
+            dur = round((end - start) / 60, 1)
+        except Exception:
+            dur = None
+        interaction_duration_data.append({"name": label, "duration": dur})
+
+    total_sessions = metrics["total_sessions"]
+    hand_flapping = metrics["hand_flapping"]
+    body_rocking  = metrics["body_rocking"]
+    motor_total   = metrics["motor_events_total"]
+    focus_pct     = metrics["focus_percent"]
+    posture_pct   = metrics["posture_percent"]
+    aversions     = metrics["aversions"]
+
+    posture_label = "Stable" if posture_pct >= 70 else "Unstable"
+    movement_label = "Calm" if motor_total == 0 else "Active"
+
+    return {
+        "stats": {
+            "totalSessions": {
+                "value":      total_sessions,
+                "trend":      f"+{min(total_sessions, 2)} this week",
+                "isPositive": True,
+                "label":      "Total Sessions",
+            },
+            "headOrientation": {
+                "value":      posture_label,
+                "trend":      f"{aversions} Aversion Event(s)",
+                "isPositive": posture_pct >= 70,
+                "label":      "Posture Stability",
+            },
+            "bodyMovement": {
+                "value":              movement_label,
+                "handFlapping":       f"{hand_flapping} instance(s)",
+                "repeatedMovements":  f"{body_rocking} instance(s)" if body_rocking else "None",
+                "motorEventsTotal":   motor_total,
+                "label":              "Body Movement",
+            },
+            "eyeTracking": {
+                "value":      f"{focus_pct}%",
+                "trend":      f"{aversions} gaze aversion(s)",
+                "isPositive": focus_pct >= 70,
+                "label":      "Visual Focus",
+            },
+        },
+        "recentSessions":        formatted_recent,
+        "chartData":             [],
+        "responseLatencyData":   response_latency_data,
+        "interactionDurationData": interaction_duration_data,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════
+# Profiles
+# ═══════════════════════════════════════════════════════════════
+@app.get("/api/profiles")
+def get_profiles():
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute("SELECT * FROM participants LIMIT 1").fetchone()
+    patient = dict(row) if row else {"name": "No Patient", "age": 0}
+    return {"patient": patient, "longitudinalData": [], "reports": []}
+
+
+# ═══════════════════════════════════════════════════════════════
+# Reports list
+# ═══════════════════════════════════════════════════════════════
+@app.get("/api/reports")
+def get_reports():
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            """SELECT s.session_id as id, COALESCE(p.name, s.participant_id) as patient,
+                      s.start_time as date, s.activity_id
+               FROM sessions s
+               LEFT JOIN participants p ON s.participant_id = p.participant_id
+               ORDER BY s.start_time DESC"""
+        ).fetchall()
+    reports = []
+    for row in rows:
+        reports.append({
+            "id":      f"R-{row['id']}",
+            "patient": row["patient"],
+            "date":    row["date"],
+            "activity": row["activity_id"],
+            "type":    "Session Summary",
+            "status":  "Reviewed",
+        })
+    return {"reports": reports}
+
+
+# ═══════════════════════════════════════════════════════════════
+# Report detail (Bedrock AI report)
+# ═══════════════════════════════════════════════════════════════
+@app.get("/api/reports/{report_id}")
+def get_report_detail(report_id: str):
+    session_id = report_id.replace("R-", "")
+    db = Database(DB_PATH)
+    session_data = db.get_session_full_summary(session_id)
+
+    evidence_engine = EvidenceEngine()
+    insight = evidence_engine.analyze_repetition_context(session_data.get("events", []))
+
+    report_content = ReportTemplates.get_empty_template()
+
+    session = session_data.get("session", {})
+    if not session:
+        report_content["1_session_overview"]["content"] = "Session data not found."
+        return {"id": report_id, "sections": report_content, "ai_report": None}
+
+    acc = session.get("accuracy")
+    acc_str = f"{int(acc * 100)}%" if acc is not None else "N/A"
+    telem = session_data.get("telemetry", {})
+    frames = telem.get("frames", 0) or 0
+    focus_frames = telem.get("focus_frames", 0) or 0
+    focus_pct = round(focus_frames / frames * 100, 1) if frames > 0 else 0
+    event_counts = session_data.get("event_counts", {})
+    gaze_aversions = event_counts.get("GAZE_AVERSION", 0)
+    motor_total = sum(event_counts.get(k, 0) for k in [
+        "HAND_FLAPPING", "BODY_ROCKING", "WRIST_POSTURING", "FINGER_FLICKING", "HEAD_TIC"
+    ])
+
+    # Populate template sections with real data
+    report_content["1_session_overview"]["content"] = (
+        f"Session {session_id[:8]} completed for Activity {session.get('activity_id', 'N/A')}. "
+        f"Child achieved {acc_str} accuracy. "
+        f"{frames} telemetry frames were captured during the session."
+    )
+    report_content["2_domain_observations"]["content"] = (
+        f"Visual focus was maintained for {focus_pct}% of the session. "
+        f"Average response latency: {session.get('response_time_sec', 'N/A')}s. "
+        f"EAR (eye-aperture ratio): {round(float(telem.get('avg_ear') or 0), 3)}."
+    )
+    report_content["3_key_events"]["content"] = (
+        f"{gaze_aversions} gaze aversion event(s) detected. "
+        f"{motor_total} motor behaviour event(s) detected total. "
+        + (f"Breakdown: {json.dumps(event_counts)}." if event_counts else "No notable events.")
+    )
+
+    if insight:
+        report_content["4_contextual_patterns"]["content"] = (
+            f"{insight['statement']} "
+            f"Evidence: {insight['evidence']['total_events']} total events recorded."
+        )
+    else:
+        report_content["4_contextual_patterns"]["content"] = (
+            "No repetitive behavioural patterns were detected in this session."
+        )
+
+    # Longitudinal trend from ProgressTracker
+    tracker = ProgressTracker(db_path=DB_PATH)
+    trends = tracker.compute_trends(
+        participant_id=session.get("participant_id", "P1"),
+        activity_id=session.get("activity_id", ""),
+    )
+    report_content["5_longitudinal_trends"]["content"] = (
+        f"Accuracy trend across {trends['sessions_supported']} session(s): "
+        f"{trends['accuracy_trend']}. "
+        f"Average response time: {trends['average_response_time']}s."
+    )
+    report_content["6_professional_review"]["content"] = "Pending clinical review."
+
+    # Generate AI narrative via Bedrock
+    generator = ReportGenerator()
+    ai_result = generator.generate_report(session_data, insight)
+
+    return {
+        "id":         report_id,
+        "sections":   report_content,
+        "ai_report":  ai_result,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════
+# Grow — Recommendations
+# ═══════════════════════════════════════════════════════════════
+@app.get("/api/grow/recommend")
+def get_recommendation(patient_id: str = "P1"):
+    goal_engine = GoalEngine(db_path=DB_PATH)
+    rec_engine = RecommendationEngine()
+    db = Database(DB_PATH)
+
+    goals = goal_engine.get_active_goals(patient_id)
+    if not goals:
+        goals = goal_engine.seed_default_goals(patient_id)
+
+    # Real recent accuracy from DB
+    recent = db.get_recent_sessions(patient_id, limit=5)
+    valid_acc = [s["accuracy"] for s in recent if s.get("accuracy") is not None]
+    avg_accuracy = sum(valid_acc) / len(valid_acc) if valid_acc else None
+    recent_performance = {"accuracy": avg_accuracy}
+
+    recommendations = rec_engine.recommend_all(goals, recent_performance)
+
+    return {
+        "recommendations": recommendations,
+        "goals_count":     len(goals),
+        "sessions_analysed": len(recent),
+        "avg_accuracy":    round((avg_accuracy or 0) * 100, 1),
+    }
+
+
+# ═══════════════════════════════════════════════════════════════
+# Track — Progress Trends
+# ═══════════════════════════════════════════════════════════════
+@app.get("/api/track/trends")
+def get_trends(patient_id: str = "P1", activity_id: str = "A2"):
+    tracker = ProgressTracker(db_path=DB_PATH)
+    return tracker.compute_trends(participant_id=patient_id, activity_id=activity_id)
+
+
+# ═══════════════════════════════════════════════════════════════
+# Activities
+# ═══════════════════════════════════════════════════════════════
 @app.get("/api/activities")
 def get_activities():
-    from activity.activity_definitions import ACTIVITIES
     acts = []
     for aid, meta in ACTIVITIES.items():
-        description = meta.get("instructions", "")
-        # Activity 1 doesn't have a specific description in the dict that fits well, 
-        # but "instructions" works. Let's provide a friendly fallback.
         acts.append({
-            "id": aid,
-            "name": meta["name"],
-            "domain": meta["domain"],
-            "description": description,
-            "difficulty_levels": meta.get("difficulty_levels", ["Low"])
+            "id":               aid,
+            "name":             meta["name"],
+            "domain":           meta["domain"],
+            "description":      meta.get("instructions", ""),
+            "difficulty_levels": meta.get("difficulty_levels", ["Low"]),
         })
     return acts
 
+
+# ═══════════════════════════════════════════════════════════════
+# Goals
+# ═══════════════════════════════════════════════════════════════
 @app.get("/api/grow/goals")
 def get_goals(patient_id: str = "P1"):
-    from database.database import Database
+    goal_engine = GoalEngine(db_path=DB_PATH)
+    goals = goal_engine.get_active_goals(patient_id)
+    if not goals:
+        goals = goal_engine.seed_default_goals(patient_id)
+    return goals
+
+
+# ═══════════════════════════════════════════════════════════════
+# Session lifecycle (legacy endpoints used by old activities)
+# ═══════════════════════════════════════════════════════════════
+active_sessions: dict = {}
+
+
+@app.post("/api/session/start")
+def start_session(activity_id: str, patient_id: str = "P1"):
+    session_id = f"sess_{uuid.uuid4().hex[:8]}"
+    runtime = ActivityRuntime(session_id, activity_id, "instruction_following", "Low")
+    runtime.start()
+    active_sessions[session_id] = runtime
     db = Database(DB_PATH)
-    with sqlite3.connect(db.db_path) as conn:
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM goals WHERE participant_id = ?", (patient_id,))
-        rows = [dict(row) for row in cursor.fetchall()]
-        
-    if not rows:
-        # Seed initial goals
-        goals = [
-            {"goal_id": "G-001", "participant_id": patient_id, "domain": "Instruction Following", "goal_text": "Improve completion of two-step instructions", "baseline": "60%", "target": "80%", "status": "ACTIVE"},
-            {"goal_id": "G-002", "participant_id": patient_id, "domain": "Imitation", "goal_text": "Improve mirrored motor imitation latency", "baseline": "4.2s", "target": "< 2.0s", "status": "ACTIVE"},
-            {"goal_id": "G-003", "participant_id": patient_id, "domain": "Social / Emotion", "goal_text": "Identify basic emotions correctly", "baseline": "40%", "target": "75%", "status": "REVIEW"}
-        ]
-        with sqlite3.connect(db.db_path) as conn:
-            cursor = conn.cursor()
-            for g in goals:
-                cursor.execute('''INSERT INTO goals (goal_id, participant_id, domain, goal_text, baseline, target, status) 
-                                  VALUES (?, ?, ?, ?, ?, ?, ?)''', 
-                               (g["goal_id"], g["participant_id"], g["domain"], g["goal_text"], g["baseline"], g["target"], g["status"]))
-            conn.commit()
-        return goals
-    return rows
+    db.add_participant(patient_id, "Child", 5, time.time())
+    db.start_session(session_id, patient_id, time.time(), activity_id, "Low")
+    return {"status": "started", "session_id": session_id}
 
-from pydantic import BaseModel
 
+@app.post("/api/session/end")
+def end_session(session_id: str):
+    if session_id not in active_sessions:
+        return {"error": "Session not found"}
+    runtime = active_sessions.pop(session_id)
+    result = runtime.finish(completion_status="COMPLETED")
+    # Use actual runtime accuracy if available, otherwise 0
+    accuracy = result.get("accuracy") or 0.0
+    response_time = result.get("response_time_sec") or 0.0
+    db = Database(DB_PATH)
+    db.end_session(session_id, time.time(), accuracy, response_time)
+    return {"status": "ended", "result": result}
+
+
+# ═══════════════════════════════════════════════════════════════
+# Sessions API (new endpoints used by activities via HCP)
+# ═══════════════════════════════════════════════════════════════
+class StartSessionReq(BaseModel):
+    participant_id: str = "P1"
+    activity_id: str
+    difficulty: int = 1
+
+
+class LogEventReq(BaseModel):
+    event_type: str
+    severity: str = "MEDIUM"
+    details: str = ""
+
+
+class EndSessionReq(BaseModel):
+    accuracy: float = 0.0
+    response_time_sec: float = 0.0
+
+
+@app.post("/api/sessions/start")
+def api_start_session(req: StartSessionReq):
+    session_id = f"S-{uuid.uuid4().hex[:8]}"
+    start_time = time.time()
+    db = Database(DB_PATH)
+    db.add_participant(req.participant_id, "Child", 5, start_time)
+    db.start_session(session_id, req.participant_id, start_time, req.activity_id, req.difficulty)
+    return {"session_id": session_id, "start_time": start_time}
+
+
+@app.post("/api/sessions/{session_id}/events")
+def api_log_event(session_id: str, req: LogEventReq):
+    db = Database(DB_PATH)
+    db.insert_event(session_id, time.time(), req.event_type, req.severity, req.details)
+    return {"status": "event_logged"}
+
+
+@app.post("/api/sessions/{session_id}/end")
+def api_end_session(session_id: str, req: EndSessionReq):
+    db = Database(DB_PATH)
+    end_time = time.time()
+    db.end_session(session_id, end_time, req.accuracy, req.response_time_sec)
+
+    # Run full session analysis and update goals if accuracy is good
+    analyzer = SessionAnalyzer(session_id=session_id, db_path=DB_PATH)
+    summary = analyzer.analyze()
+
+    # Auto-advance goal baseline if accuracy improved
+    if req.accuracy >= 0.7:
+        participant_id = "P1"  # Will be available from session row in summary
+        db.update_goal_baseline(
+            participant_id=participant_id,
+            domain="Instruction Following",
+            new_baseline=f"{int(req.accuracy * 100)}% (recent session)"
+        )
+
+    return {
+        "status":     "session_ended",
+        "session_id": session_id,
+        "summary":    summary,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════
+# Activity submissions
+# ═══════════════════════════════════════════════════════════════
 class A1Submission(BaseModel):
     session_id: str
     name: str
@@ -543,13 +580,13 @@ class A1Submission(BaseModel):
     animal: str
     day_text: str
 
+
 @app.post("/api/activities/a1/submit")
 def submit_a1(data: A1Submission):
-    from activities.a1_natural_interaction.logic import Activity1Logic
     logic = Activity1Logic(DB_PATH)
-    
     result = logic.process_submission(data.session_id, data.dict())
     return {"status": "success", "accuracy": result["accuracy"]}
+
 
 class A2Submission(BaseModel):
     session_id: str
@@ -557,17 +594,13 @@ class A2Submission(BaseModel):
     accuracy: float
     avg_latency: float
 
+
 @app.post("/api/activities/a2/submit")
 def submit_a2(data: A2Submission):
-    from activities.a2_follow_instruction.logic import Activity2Logic
     logic = Activity2Logic(DB_PATH)
-    
     result = logic.process_submission(data.session_id, data.dict())
-    return {
-        "status": "success", 
-        "accuracy": result["accuracy"],
-        "avg_latency": result["avg_latency"]
-    }
+    return {"status": "success", "accuracy": result["accuracy"], "avg_latency": result["avg_latency"]}
+
 
 class A3Submission(BaseModel):
     session_id: str
@@ -575,17 +608,27 @@ class A3Submission(BaseModel):
     accuracy: float
     avg_latency: float
 
+
 @app.post("/api/activities/a3/submit")
 def submit_a3(data: A3Submission):
-    from activities.a3_target_finding.logic import Activity3Logic
     logic = Activity3Logic(DB_PATH)
-    
     result = logic.process_submission(data.session_id, data.dict())
-    return {
-        "status": "success", 
-        "accuracy": result["accuracy"],
-        "avg_latency": result["avg_latency"]
-    }
+    return {"status": "success", "accuracy": result["accuracy"], "avg_latency": result["avg_latency"]}
+
+
+class A4Submission(BaseModel):
+    session_id: str
+    metrics: dict
+    accuracy: float
+    avg_latency: float
+
+
+@app.post("/api/activities/a4/submit")
+def submit_a4(data: A4Submission):
+    logic = Activity4Logic(DB_PATH)
+    result = logic.process_submission(data.session_id, data.dict())
+    return {"status": "success", "accuracy": result["accuracy"], "avg_latency": result["avg_latency"]}
+
 
 class A5Submission(BaseModel):
     session_id: str
@@ -593,17 +636,13 @@ class A5Submission(BaseModel):
     accuracy: float
     avg_latency: float
 
+
 @app.post("/api/activities/a5/submit")
 def submit_a5(data: A5Submission):
-    from activities.a5_emotion_social.logic import Activity5Logic
     logic = Activity5Logic(DB_PATH)
-    
     result = logic.process_submission(data.session_id, data.dict())
-    return {
-        "status": "success", 
-        "accuracy": result["accuracy"],
-        "avg_latency": result["avg_latency"]
-    }
+    return {"status": "success", "accuracy": result["accuracy"], "avg_latency": result["avg_latency"]}
+
 
 class A6Submission(BaseModel):
     session_id: str
@@ -611,38 +650,17 @@ class A6Submission(BaseModel):
     accuracy: float
     avg_latency: float
 
+
 @app.post("/api/activities/a6/submit")
 def submit_a6(data: A6Submission):
-    from activities.a6_controlled_challenge.logic import Activity6Logic
     logic = Activity6Logic(DB_PATH)
-    
     result = logic.process_submission(data.session_id, data.dict())
-    return {
-        "status": "success", 
-        "accuracy": result["accuracy"],
-        "avg_latency": result["avg_latency"]
-    }
-class A4Submission(BaseModel):
-    session_id: str
-    metrics: dict
-    accuracy: float
-    avg_latency: float
+    return {"status": "success", "accuracy": result["accuracy"], "avg_latency": result["avg_latency"]}
 
-@app.post("/api/activities/a4/submit")
-def submit_a4(data: A4Submission):
-    from activities.a4_imitation.logic import Activity4Logic
-    logic = Activity4Logic(DB_PATH)
-    
-    result = logic.process_submission(data.session_id, data.dict())
-    return {
-        "status": "success", 
-        "accuracy": result["accuracy"],
-        "avg_latency": result["avg_latency"]
-    }
 
-# --- AUTHENTICATION API ---
-from typing import Optional
-
+# ═══════════════════════════════════════════════════════════════
+# Authentication (MVP — accepts any email, returns user context)
+# ═══════════════════════════════════════════════════════════════
 class ParentLoginRequest(BaseModel):
     email: str
     password: Optional[str] = ""
@@ -652,88 +670,26 @@ class ParentLoginRequest(BaseModel):
 def parent_login_endpoint(data: ParentLoginRequest):
     email = data.email.strip()
     if not email:
-        return {"status": "error", "message": "Email or Parent ID is required"}
-    
+        return {"status": "error", "message": "Email is required"}
     username = email.split("@")[0].replace(".", " ").title()
+    # Look up children from DB participants
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute("SELECT participant_id, name, age FROM participants").fetchall()
+    children = [{"id": r["participant_id"], "name": r["name"] or "Child", "age": r["age"] or 6}
+                for r in rows] or [{"id": "P1", "name": "Child", "age": 6}]
     return {
         "status": "success",
         "user": {
-            "role": "parent",
-            "email": email,
-            "name": username,
-            "token": f"parent_tok_{int(time.time())}",
-            "children": [
-                {"id": "P1", "name": "Aarav M.", "age": 6},
-                {"id": "P2", "name": "Priya S.", "age": 5}
-            ]
-        }
+            "role":     "parent",
+            "email":    email,
+            "name":     username,
+            "token":    f"parent_tok_{int(time.time())}",
+            "children": children,
+        },
     }
 
 
 @app.post("/api/auth/logout")
 def logout_endpoint():
     return {"status": "success", "message": "Logged out successfully"}
-
-
-import uuid
-import time
-from pydantic import BaseModel
-from typing import Optional
-
-class StartSessionReq(BaseModel):
-    participant_id: str = "P1"
-    activity_id: str
-    difficulty: int = 1
-
-class LogEventReq(BaseModel):
-    event_type: str
-    difficulty: str
-    accuracy: float
-    target: str = ""
-    status: str = "logged"
-
-class EndSessionReq(BaseModel):
-    accuracy: float
-    response_time_sec: float
-
-@app.post("/api/sessions/start")
-def api_start_session(req: StartSessionReq):
-    session_id = f"S-{uuid.uuid4().hex[:8]}"
-    start_time = time.time()
-    
-    from database.database import Database
-    db = Database(DB_PATH)
-    db.start_session(session_id, req.participant_id, start_time, req.activity_id, req.difficulty)
-    return {"session_id": session_id, "start_time": start_time}
-
-@app.post("/api/sessions/{session_id}/events")
-def api_log_event(session_id: str, req: LogEventReq):
-    from database.database import Database
-    db = Database(DB_PATH)
-    event_time = time.time()
-    db.insert_event(session_id, event_time, req.event_type, req.difficulty, req.accuracy, req.target, req.status)
-    return {"status": "event_logged"}
-
-@app.post("/api/sessions/{session_id}/end")
-def api_end_session(session_id: str, req: EndSessionReq):
-    import sqlite3
-    from database.database import Database
-    db = Database(DB_PATH)
-    end_time = time.time()
-    db.end_session(session_id, end_time, req.accuracy, req.response_time_sec)
-    
-    # Phase 4: Dynamic Goal Progression
-    with sqlite3.connect(db.db_path) as conn:
-        cursor = conn.cursor()
-        
-        # If accuracy is very high, auto-update the relevant goal's baseline
-        if req.accuracy >= 0.7:
-            cursor.execute('''
-                UPDATE goals 
-                SET baseline = '70% (Recently improved!)' 
-                WHERE domain = 'Instruction Following' AND participant_id = 'P1'
-            ''')
-            conn.commit()
-            
-    return {"status": "session_ended", "session_id": session_id}
-
