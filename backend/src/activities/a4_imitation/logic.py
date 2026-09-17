@@ -1,28 +1,23 @@
 import json
-from db import save_activity_metrics
+import sqlite3
+import time
 
 class Activity4Logic:
     def __init__(self, db_path: str):
         self.db_path = db_path
-        
+
     def process_submission(self, session_id: str, metrics: dict) -> dict:
-        """
-        Process the A4 (Mini Movie Studio) submission.
-        """
-        # Calculate summary metrics
         accuracy = metrics.get("accuracy", 0.0)
         avg_latency = metrics.get("avg_latency", 0.0)
-        
-        # Save to database using the unified telemetry handler
-        save_activity_metrics(
-            self.db_path,
-            session_id=session_id,
-            activity_id="A4",
-            accuracy=accuracy,
-            avg_latency=avg_latency,
-            metrics_json=json.dumps(metrics)
-        )
-        
+
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE sessions SET accuracy = ?, response_time_sec = ?, end_time = ? WHERE session_id = ?",
+                (accuracy, avg_latency, time.time(), session_id)
+            )
+            conn.commit()
+
         return {
             "status": "success",
             "accuracy": accuracy,

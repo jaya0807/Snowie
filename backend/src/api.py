@@ -72,10 +72,30 @@ async def websocket_capture(websocket: WebSocket, session_id: str):
                                 "Head position unstable for 3+ seconds")
                 consecutive_unstable = 0
 
-            # Anomaly Detection: Hand Flapping (frontend already debounces, just log once per detection)
+            # Anomaly Detection: Hand Flapping
             if metrics.get("newFlap", False):
                 db.insert_event(session_id, time.time(), "HAND_FLAPPING", "HIGH",
                                 "Rapid wrist oscillation detected by MediaPipe Pose")
+
+            # Anomaly Detection: Body Rocking
+            if metrics.get("newRock", False):
+                db.insert_event(session_id, time.time(), "BODY_ROCKING", "HIGH",
+                                "Rhythmic shoulder oscillation detected by MediaPipe Pose")
+
+            # Anomaly Detection: Wrist Posturing
+            if metrics.get("newPosture", False):
+                db.insert_event(session_id, time.time(), "WRIST_POSTURING", "MEDIUM",
+                                "Elevated wrists with low velocity detected by MediaPipe Pose")
+
+            # Anomaly Detection: Finger Flicking
+            if metrics.get("newFlick", False):
+                db.insert_event(session_id, time.time(), "FINGER_FLICKING", "MEDIUM",
+                                "Rapid thumb-index oscillation detected by MediaPipe Hands")
+
+            # Anomaly Detection: Head Tic
+            if metrics.get("newTic", False):
+                db.insert_event(session_id, time.time(), "HEAD_TIC", "HIGH",
+                                "Rapid head yaw/pitch oscillation detected")
                 
             # Broadcast live to parent monitor
             try:
@@ -96,8 +116,8 @@ async def websocket_capture(websocket: WebSocket, session_id: str):
 # Allow CORS so Next.js (localhost:3000) can fetch data from FastAPI (localhost:8000)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

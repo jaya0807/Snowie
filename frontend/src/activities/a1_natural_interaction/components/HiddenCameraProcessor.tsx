@@ -360,7 +360,7 @@ export default function HiddenCameraProcessor({
       motorMetrics.current.newRock = false;
       motorMetrics.current.newPosture = false;
       handsMetrics.current.newFlick = false;
-      em.newTic = false;
+      eyeMetrics.current.newTic = false;
     }
   };
 
