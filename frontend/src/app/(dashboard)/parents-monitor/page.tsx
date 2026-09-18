@@ -54,7 +54,7 @@ function LiveSessionContent() {
 
   useEffect(() => {
     const connect = () => {
-      const ws = new WebSocket("ws://localhost:8000/api/ws/session");
+      const ws = new WebSocket(`ws://${window.location.hostname}:8000/api/ws/session`);
       wsRef.current = ws;
 
       ws.onopen = () => {

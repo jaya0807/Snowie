@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { Logo } from "@/components/common/Logo";
+import { useAuth } from "@/context/AuthContext";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Camera, Activity, LayoutDashboard, Users, FileText, Settings, ClipboardList, Target, Sprout, TrendingUp } from "lucide-react";
+import { Camera, Activity, LayoutDashboard, Users, FileText, Settings, ClipboardList, Target, Sprout, TrendingUp, LogOut } from "lucide-react";
 
 function NavItem({ href, icon: Icon, label, isLive = false }: { href: string, icon: any, label: string, isLive?: boolean }) {
   const pathname = usePathname();
@@ -33,6 +34,7 @@ function NavItem({ href, icon: Icon, label, isLive = false }: { href: string, ic
 export function Sidebar() {
   const pathname = usePathname();
   const [isLive, setIsLive] = useState(false);
+  const { logout } = useAuth();
 
   useEffect(() => {
     const checkLive = () => {
@@ -88,8 +90,15 @@ export function Sidebar() {
 
       </nav>
 
-      <div className="p-3 border-t border-brand/10">
+      <div className="p-3 border-t border-brand/10 space-y-1">
         <NavItem href="/settings" icon={Settings} label="Settings" />
+        <button
+          onClick={() => logout()}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-zinc-500 hover:text-rose-600 hover:bg-rose-50"
+        >
+          <LogOut className="w-4 h-4" />
+          <span className="font-medium text-sm">Log out</span>
+        </button>
       </div>
     </aside>
   );

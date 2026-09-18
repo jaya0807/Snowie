@@ -3,22 +3,25 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Sprout, ArrowRight, BrainCircuit, Play } from "lucide-react";
 import { useState, useEffect } from "react";
 
+import { useAuth } from "@/context/AuthContext";
 export default function GrowPage() {
   const [plan, setPlan] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const patientId = user?.children?.[0]?.id || "P1";
 
   
 
 
 
     useEffect(() => {
-    fetch("http://localhost:8000/api/grow/recommend")
+    fetch(`http://${window.location.hostname}:8000/api/grow/recommend?patient_id=${patientId}`)
       .then(res => res.json())
       .then(data => {
         if (data.recommendation) {
           setPlan([{
-            goal: "Improve completion of two-step instructions",
-            activity: data.recommendation.activity_id + " Recommended",
+            goal: data.recommendation.goal_text || "Improve completion of two-step instructions",
+            activity: "Activity " + data.recommendation.activity_id + " Recommended",
             difficulty: data.recommendation.recommended_difficulty,
             reason: data.reason
           }]);

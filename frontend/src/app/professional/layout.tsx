@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { Users, FileText, Settings, LogOut, Stethoscope } from "lucide-react";
+import { Users, LogOut } from "lucide-react";
 import { Logo } from "@/components/common/Logo";
 
 export default function ProfessionalLayout({
@@ -24,14 +24,6 @@ export default function ProfessionalLayout({
           <Link href="/professional" className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-brand/10 text-brand font-semibold transition-colors">
             <Users className="w-4 h-4" />
             <span className="text-sm">My Patients</span>
-          </Link>
-          <Link href="#" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-black/5 transition-colors">
-            <FileText className="w-4 h-4" />
-            <span className="text-sm font-medium">All Reports</span>
-          </Link>
-          <Link href="#" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-black/5 transition-colors">
-            <Settings className="w-4 h-4" />
-            <span className="text-sm font-medium">Settings</span>
           </Link>
         </nav>
         

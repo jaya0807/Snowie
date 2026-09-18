@@ -30,7 +30,7 @@ export default function Activity5UI() {
   useEffect(() => {
     const initSession = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/api/session/start?activity_id=A2&force_new=${localStorage.getItem('forceNewSession') === 'true'}`, { method: 'POST' });
+        const res = await fetch(`http://${window.location.hostname}:8000/api/session/start?activity_id=A2&force_new=${localStorage.getItem('forceNewSession') === 'true'}`, { method: 'POST' });
         const data = await res.json();
         setSessionId(data.session_id);
       } catch(e) { console.error(e); }
@@ -102,7 +102,7 @@ export default function Activity5UI() {
     const avg_latency = TASKS.length > 0 ? totalLatency / TASKS.length : 0;
     
     try {
-      await fetch("http://localhost:8000/api/activities/a5/submit", {
+      await fetch(`http://${window.location.hostname}:8000/api/activities/a5/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -112,7 +112,7 @@ export default function Activity5UI() {
           metrics: { errors, attempts, levelsCompleted: TASKS.length }
         })
       });
-      await fetch(`http://localhost:8000/api/session/end?session_id=${sessionId || "demo-session-a5"}`, { method: 'POST' });
+      await fetch(`http://${window.location.hostname}:8000/api/session/end?session_id=${sessionId || "demo-session-a5"}`, { method: 'POST' });
     } catch (e) {
       console.error("Failed to submit metrics", e);
     }

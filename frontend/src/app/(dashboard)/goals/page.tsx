@@ -2,11 +2,14 @@
 import { Target, Plus, TrendingUp, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 
+import { useAuth } from "@/context/AuthContext";
 export default function GoalsPage() {
   const [goals, setGoals] = useState<any[]>([]);
+  const { user } = useAuth();
+  const patientId = user?.children?.[0]?.id || "P1";
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/grow/goals")
+    fetch(`http://${window.location.hostname}:8000/api/grow/goals?patient_id=${patientId}`)
       .then(res => res.json())
       .then(data => setGoals(data))
       .catch(err => console.error(err));

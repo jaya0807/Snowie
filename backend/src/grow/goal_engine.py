@@ -111,12 +111,56 @@ class GoalEngine:
         }
 
     def seed_default_goals(self, participant_id: str) -> list:
-        """Insert default goals for a new participant if none exist."""
+        """Generate dynamic goals based on recent telemetry metrics."""
         existing = self.get_active_goals(participant_id)
         if existing:
             return existing
+            
+        from database.database import Database
+        db = Database(self.db_path)
+        metrics = db.get_dashboard_metrics(participant_id)
+        
+        dynamic_goals = []
+        
+        # Focus Goal
+        focus = metrics.get("focus_percent", 0)
+        if focus < 80:
+            dynamic_goals.append({
+                "domain": "Visual Attention",
+                "goal_text": "Improve visual focus and sustained attention on tasks.",
+                "baseline": f"{focus}%",
+                "target": "80%",
+                "status": "ACTIVE"
+            })
+            
+        # Posture Goal
+        posture = metrics.get("posture_percent", 0)
+        if posture < 90:
+            dynamic_goals.append({
+                "domain": "Motor Regulation",
+                "goal_text": "Reduce fidgeting and improve seated posture stability.",
+                "baseline": f"{posture}%",
+                "target": "90%",
+                "status": "ACTIVE"
+            })
+            
+        # Cognitive Goal
+        accuracy = metrics.get("avg_accuracy", 0)
+        if accuracy < 75:
+            dynamic_goals.append({
+                "domain": "Instruction Following",
+                "goal_text": "Improve accuracy and completion rate of cognitive tasks.",
+                "baseline": f"{accuracy}%",
+                "target": "85%",
+                "status": "ACTIVE"
+            })
+            
+        if not dynamic_goals:
+            # Fallback if no data or perfect scores
+            dynamic_goals = _DEFAULT_GOALS[:3]
+            
         goals = []
-        for g in _DEFAULT_GOALS:
+        for g in dynamic_goals:
             result = self.create_goal(
                 participant_id,
                 g["domain"],

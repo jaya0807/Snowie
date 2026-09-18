@@ -334,17 +334,21 @@ def get_profiles():
 # Reports list
 # ═══════════════════════════════════════════════════════════════
 @app.get("/api/reports")
-def get_reports():
+def get_reports(patient_id: str = None):
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
-        rows = conn.execute(
-            """SELECT s.session_id as id, COALESCE(p.name, s.participant_id) as patient,
+        query = """SELECT s.session_id as id, COALESCE(p.name, s.participant_id) as patient,
                       MIN(s.start_time) as date, GROUP_CONCAT(s.activity_id, ', ') as activity_id
                FROM sessions s
-               LEFT JOIN participants p ON s.participant_id = p.participant_id
-               GROUP BY s.session_id
+               LEFT JOIN participants p ON s.participant_id = p.participant_id"""
+        
+        if patient_id:
+            query += f" WHERE s.participant_id = '{patient_id}'"
+            
+        query += """ GROUP BY s.session_id
                ORDER BY MIN(s.start_time) DESC"""
-        ).fetchall()
+               
+        rows = conn.execute(query).fetchall()
     reports = []
     for row in rows:
         reports.append({
@@ -736,25 +740,48 @@ class ParentLoginRequest(BaseModel):
     password: Optional[str] = ""
 
 
+import hashlib
+
 @app.post("/api/auth/parent/login")
 def parent_login_endpoint(data: ParentLoginRequest):
     email = data.email.strip()
+    password = data.password or "default_pass"
+    child_name = data.childName or "Child"
+    
     if not email:
         return {"status": "error", "message": "Email is required"}
-    username = email.split("@")[0].replace(".", " ").title()
-    # Look up children from DB participants
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.row_factory = sqlite3.Row
-        rows = conn.execute("SELECT participant_id, name, age FROM participants").fetchall()
-    children = [{"id": r["participant_id"], "name": r["name"] or "Child", "age": r["age"] or 6}
-                for r in rows] or [{"id": "P1", "name": "Child", "age": 6}]
+    
+    db = Database(DB_PATH)
+    
+    # Simple hash for prototype
+    password_hash = hashlib.sha256(password.encode()).hexdigest()
+    
+    user = db.get_user_by_email(email)
+    
+    if not user:
+        # Auto-register
+        user_id = "U-" + str(uuid.uuid4())[:8]
+        username = email.split("@")[0].replace(".", " ").title()
+        db.create_user(user_id, email, password_hash, username, "parent")
+        
+        # Create a default child for the new parent
+        child_id = "P-" + str(uuid.uuid4())[:8]
+        db.create_participant(child_id, child_name, 6, username, user_id)
+        
+        user = {"id": user_id, "email": email, "name": username, "role": "parent"}
+    else:
+        if user["password_hash"] != password_hash:
+            return {"status": "error", "message": "Invalid credentials"}
+    
+    children = db.get_children_for_parent(user["id"])
+    
     return {
         "status": "success",
         "user": {
-            "role":     "parent",
-            "email":    email,
-            "name":     username,
-            "token":    f"parent_tok_{int(time.time())}",
+            "role":     user["role"],
+            "email":    user["email"],
+            "name":     user["name"],
+            "token":    f"auth_tok_{user['id']}_{int(time.time())}",
             "children": children,
         },
     }
@@ -814,14 +841,36 @@ def get_clinician_patients():
             name = r["name"] or "Unknown"
             initials = "".join([n[0] for n in name.split() if n])[:2].upper()
             
+            
+            import time
+            from datetime import datetime
+            
+            # Try to fetch real DOB from DB if it exists, otherwise just approximate from age
+            approx_dob = datetime.fromtimestamp(time.time() - (r["age"] * 31536000)).strftime("%b %d, %Y") if r["age"] else "Unknown"
+            
+            # Get real metrics to determine status
+            db = Database(DB_PATH)
+            p_metrics = db.get_dashboard_metrics(pid)
+            
+            status = "Stable"
+            if p_metrics.get("total_sessions", 0) > 0 and p_metrics.get("avg_accuracy", 0) < 50:
+                status = "Requires Review"
+                
+            
+            created_at = r["created_at"] if "created_at" in r.keys() else None
+            date_of_admission = datetime.fromtimestamp(created_at).strftime("%Y-%m-%d") if created_at else "Unknown"
+            parent_name = r["parent_name"] if "parent_name" in r.keys() else "Unknown Parent"
+            
             patients.append({
                 "id": pid,
                 "name": name,
                 "age": r["age"],
-                "dob": "Jan 12, 2022" if pid == "1" else ("Mar 04, 2021" if pid == "2" else "Nov 22, 2022"),
+                "dob": approx_dob,
                 "lastSession": last_time,
-                "status": "Requires Review" if pid == "1" else "Stable",
-                "initials": initials
+                "status": status,
+                "initials": initials,
+                "date_of_admission": date_of_admission,
+                "parent_name": parent_name
             })
     return patients
 
@@ -830,18 +879,30 @@ def get_clinician_patient_detail(patient_id: str):
     db = Database(DB_PATH)
     metrics = db.get_dashboard_metrics(patient_id)
     
-    # Mock some clinical notes based on screenshot
-    notes = "Patient demonstrated high visual attention during the color sorting task but struggled with emotional regulation when transitioning to the next activity. Recommended focusing on transition warnings for next session."
+    # Fetch real clinical notes from database (Currently no notes table exists, so returning empty)
+    real_notes = []
+
+    # Calculate real trends based on metrics
+    total_sessions = metrics.get('total_sessions', 0)
+    
+    # Calculate a real review alert
+    review_alert = None
+    if total_sessions > 0 and metrics.get('avg_accuracy', 0) < 50:
+        review_alert = f"Patient accuracy has dropped to {metrics.get('avg_accuracy')}%. Consider adjusting activity difficulty."
+
+    # Use real metrics, default to 0 or N/A if no sessions
+    visual_focus = f"{metrics.get('focus_percent', 0)}%" if total_sessions > 0 else "N/A"
+    gaze_shifts = f"{metrics.get('aversions', 0)} / min" if total_sessions > 0 else "N/A"
     
     return {
-        "visualFocus": f"{metrics.get('focus_percent', 78)}%",
-        "gazeShifts": f"{metrics.get('aversions', 14)} / min",
-        "sustainedGaze": "45s",
+        "visualFocus": visual_focus,
+        "gazeShifts": gaze_shifts,
+        "sustainedGaze": "N/A", # No real metric for this yet
         "trends": {
-            "visualAttention": 85,
-            "emotionalRegulation": 60,
-            "taskCompletion": 92
+            "visualAttention": metrics.get('focus_percent', 0) if total_sessions > 0 else 0,
+            "emotionalRegulation": metrics.get('posture_percent', 0) if total_sessions > 0 else 0,
+            "taskCompletion": metrics.get('avg_accuracy', 0) if total_sessions > 0 else 0
         },
-        "notes": notes,
-        "reviewAlert": "Alex showed a 15% decrease in task engagement during the last two sessions. Consider adjusting the activity difficulty or scheduling a follow-up." if patient_id == "1" else None
+        "notes": real_notes,
+        "reviewAlert": review_alert
     }

@@ -175,7 +175,7 @@ export default function CalibrationPage() {
 
   useEffect(() => {
     // Initialize WebSocket for streaming data to backend
-    const ws = new WebSocket("ws://localhost:8000/api/ws/capture/test_session");
+    const ws = new WebSocket("ws://localhost:8000/api/ws/capture/test_session`);
     ws.onerror = (e) => console.warn("Calibration WS Error:", e);
     wsRef.current = ws;
     

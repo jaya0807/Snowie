@@ -58,7 +58,7 @@ export default function ActivitiesPage() {
 
     const checkStatus = async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/master/status");
+        const res = await fetch(`http://${window.location.hostname}:8000/api/master/status`);
         const data = await res.json();
         setHasHistory(data.has_history);
       } catch (e) {}
@@ -75,7 +75,7 @@ export default function ActivitiesPage() {
 
   const handleStartNew = async () => {
     try {
-      const res = await fetch("http://localhost:8000/api/master/start", { method: "POST" });
+      const res = await fetch(`http://${window.location.hostname}:8000/api/master/start`, { method: "POST" });
       const data = await res.json();
       localStorage.setItem("master_session_id", data.session_id);
       localStorage.setItem("master_session_active", "true");
@@ -90,7 +90,7 @@ export default function ActivitiesPage() {
 
   const handleResume = async () => {
     try {
-      const res = await fetch("http://localhost:8000/api/master/resume", { method: "POST" });
+      const res = await fetch(`http://${window.location.hostname}:8000/api/master/resume`, { method: "POST" });
       const data = await res.json();
       localStorage.setItem("master_session_id", data.session_id);
       localStorage.setItem("master_session_active", "true");
@@ -108,7 +108,7 @@ export default function ActivitiesPage() {
     toast("Ending session & generating AI Report...");
     try {
       if (sessionId) {
-        await fetch(`http://localhost:8000/api/master/end?session_id=${sessionId}`, { method: "POST" });
+        await fetch(`http://${window.location.hostname}:8000/api/master/end?session_id=${sessionId}`, { method: "POST" });
       }
       localStorage.removeItem("master_session_active");
       localStorage.removeItem("master_session_id");

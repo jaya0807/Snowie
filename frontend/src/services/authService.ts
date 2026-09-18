@@ -50,48 +50,22 @@ export async function parentLogin(
   credentials: ParentLoginCredentials
 ): Promise<{ success: boolean; user?: AuthUser; error?: string }> {
   try {
-    const res = await apiRequest("/auth/login/parent", {
+    const res = await apiRequest("/api/auth/parent/login", {
       method: "POST",
       body: JSON.stringify(credentials),
     });
 
-    if ((res as any).token && (res as any).user) {
-      const user: ParentUser = { ...(res as any).user, role: "parent" };
-      setStoredSession((res as any).token, user);
+    if (res.status === 200 && res.data && res.data.status === "success") {
+      const user: ParentUser = { ...res.data.user, role: "parent" };
+      setStoredSession(res.data.user.token, user);
       return { success: true, user };
     }
     
-    // Fallback Mock Logic
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    if (credentials.email === "test@example.com" && credentials.password === "password") {
-      const mockUser: ParentUser = {
-        role: "parent",
-        email: credentials.email,
-        name: "Test Parent",
-        token: "mock_token_123",
-        children: [{ id: "c1", name: credentials.childName || "Milo", age: 6 }]
-      };
-      setStoredSession(mockUser.token, mockUser);
-      return { success: true, user: mockUser };
-    } else {
-      return { success: false, error: "Invalid email or password. Use test@example.com / password" };
-    }
+    return { success: false, error: res.error || res.data?.message || "Invalid credentials" };
 
   } catch (error: any) {
     console.error("Login failed:", error);
-    
-    // Mock logic on fail
-    await new Promise(resolve => setTimeout(resolve, 800));
-    const mockUser: ParentUser = {
-      role: "parent",
-      email: credentials.email,
-      name: "Test Parent",
-      token: "mock_token_123",
-      children: [{ id: "c1", name: credentials.childName || "Milo", age: 6 }]
-    };
-    setStoredSession(mockUser.token, mockUser);
-    return { success: true, user: mockUser };
+    return { success: false, error: "Network error. Please try again." };
   }
 }
 

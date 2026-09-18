@@ -235,7 +235,7 @@ export default function HiddenCameraProcessor({
     const yawRatio = ((noseToLeft / eyeDist) - 0.5) * 2;
     const yawDeg = parseFloat((yawRatio * 90).toFixed(1));
     const avgEyeY = (leftEye.y + rightEye.y) / 2;
-    const pitchDeg = parseFloat(((nose.y - avgEyeY) * 10 * 45).toFixed(1));
+    const pitchDeg = parseFloat((((nose.y - avgEyeY) - 0.15) * 10 * 45).toFixed(1));
 
     // EAR + blinks
     const leftEyeLm = [33, 160, 158, 133, 153, 144].map((i) => landmarks[i]);
@@ -366,7 +366,7 @@ export default function HiddenCameraProcessor({
 
   useEffect(() => {
     // Connect to the capture WebSocket
-    const ws = new WebSocket(`ws://localhost:8000/api/ws/capture/${sessionId}`);
+    const ws = new WebSocket(`ws://${window.location.hostname}:8000/api/ws/capture/${sessionId}`);
     wsRef.current = ws;
     ws.onerror = (e) => console.warn("[Tracker] WS error:", e);
 

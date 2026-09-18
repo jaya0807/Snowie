@@ -104,7 +104,7 @@ class Database:
     # ──────────────────────────────────────────────
     def add_participant(self, participant_id: str, name: str = None,
                         age: int = None, created_at: float = None):
-        created_at = created_at or _time.time()
+        created_at = created_at or __time.time()
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
                 "INSERT OR IGNORE INTO participants (participant_id, name, age, created_at) VALUES (?,?,?,?)",
@@ -117,7 +117,7 @@ class Database:
     def start_session(self, session_id: str, participant_id: str = None,
                       start_time: float = None, activity_id: str = None,
                       difficulty=None):
-        start_time = start_time or _time.time()
+        start_time = start_time or __time.time()
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
                 "INSERT OR REPLACE INTO sessions (session_id, participant_id, start_time, activity_id, difficulty) VALUES (?,?,?,?,?)",
@@ -265,6 +265,32 @@ class Database:
     # ──────────────────────────────────────────────
     # Dashboard Aggregations
     # ──────────────────────────────────────────────
+    def get_user_by_email(self, email: str) -> dict:
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            row = conn.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+            return dict(row) if row else None
+
+    def create_user(self, user_id: str, email: str, password_hash: str, name: str, role: str):
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                "INSERT INTO users (id, email, password_hash, name, role) VALUES (?, ?, ?, ?, ?)",
+                (user_id, email, password_hash, name, role)
+            )
+
+    def get_children_for_parent(self, parent_id: str) -> list:
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute("SELECT participant_id as id, name, age FROM participants WHERE parent_id=?", (parent_id,)).fetchall()
+            return [dict(r) for r in rows]
+
+    def create_participant(self, participant_id: str, name: str, age: int, parent_name: str, parent_id: str):
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                "INSERT INTO participants (participant_id, name, age, created_at, parent_name, parent_id) VALUES (?, ?, ?, ?, ?, ?)",
+                (participant_id, name, age, _time.time(), parent_name, parent_id)
+            )
+
     def get_dashboard_metrics(self, participant_id: str, date: str = None) -> dict:
         """Returns aggregated real-time metrics for the professional dashboard."""
         with sqlite3.connect(self.db_path) as conn:

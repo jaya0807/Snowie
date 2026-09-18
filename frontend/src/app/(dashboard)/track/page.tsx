@@ -3,13 +3,16 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Clock, Timer } from "lucide-react";
 import { useState, useEffect } from "react";
 
+import { useAuth } from "@/context/AuthContext";
 export default function TrackPage() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<string>("");
+  const { user } = useAuth();
+  const patientId = user?.children?.[0]?.id || "P1";
 
   useEffect(() => {
-    fetch(selectedDate ? `http://localhost:8000/api/track/trends?date=${selectedDate}` : "http://localhost:8000/api/track/trends")
+    fetch(selectedDate ? `http://${window.location.hostname}:8000/api/track/trends?patient_id=${patientId}&date=${selectedDate}` : `http://${window.location.hostname}:8000/api/track/trends?patient_id=${patientId}`)
       .then(res => res.json())
       .then(resData => {
         if (resData.history && Array.isArray(resData.history) && resData.history.length > 0) {
