@@ -10,7 +10,7 @@ export function PatientReport({ selectedPatient }: { selectedPatient: any }) {
   useEffect(() => {
     if (selectedPatient?.id) {
       setLoading(true);
-      fetch(`http://localhost:8001/api/clinician/patients/${selectedPatient.id}`)
+      fetch(`http://localhost:8000/api/clinician/patients/${selectedPatient.id}`)
         .then(res => res.json())
         .then(data => {
           setDetails(data);
@@ -57,7 +57,7 @@ export function PatientReport({ selectedPatient }: { selectedPatient: any }) {
 
       <div className="flex-1 overflow-auto p-6 space-y-6">
         {details?.reviewAlert && (
-          <div className="bg-warning-bg border border-warning-light/50 p-4 rounded-xl flex items-start gap-3">
+          <div className="bg-warning-bg border border-warning-light/50 p-4 rounded-lg flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-warning-dark shrink-0 mt-0.5" />
             <div>
               <h4 className="font-semibold text-warning-dark text-sm">Review Recommended</h4>

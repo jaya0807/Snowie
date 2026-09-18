@@ -366,7 +366,7 @@ export default function HiddenCameraProcessor({
 
   useEffect(() => {
     // Connect to the capture WebSocket
-    const ws = new WebSocket(`ws://localhost:8001/api/ws/capture/${sessionId}`);
+    const ws = new WebSocket(`ws://localhost:8000/api/ws/capture/${sessionId}`);
     wsRef.current = ws;
     ws.onerror = (e) => console.warn("[Tracker] WS error:", e);
 

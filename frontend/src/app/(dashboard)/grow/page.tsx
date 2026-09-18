@@ -12,7 +12,7 @@ export default function GrowPage() {
 
 
     useEffect(() => {
-    fetch("http://localhost:8001/api/grow/recommend")
+    fetch("http://localhost:8000/api/grow/recommend")
       .then(res => res.json())
       .then(data => {
         if (data.recommendation) {

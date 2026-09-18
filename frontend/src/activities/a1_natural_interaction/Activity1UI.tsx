@@ -43,7 +43,7 @@ export default function Activity1UI() {
     } else {
       // Finish Activity
       try {
-        await fetch(`http://localhost:8001/api/activities/a1/submit`, {
+        await fetch(`http://localhost:8000/api/activities/a1/submit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -51,7 +51,7 @@ export default function Activity1UI() {
             name, feeling, animal: favAnimal, day_text: dayText
           })
         });
-        await fetch(`http://localhost:8001/api/session/end?session_id=${sessionId}`, { method: 'POST' });
+        await fetch(`http://localhost:8000/api/session/end?session_id=${sessionId}`, { method: 'POST' });
       } catch (e) {
         console.error("Failed to submit A1 data", e);
       }

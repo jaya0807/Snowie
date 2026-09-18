@@ -12,7 +12,7 @@ export default function ProfessionalDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:8001/api/clinician/patients")
+    fetch("http://localhost:8000/api/clinician/patients")
       .then(res => res.json())
       .then(data => {
         if (data && data.length > 0) {

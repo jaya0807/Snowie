@@ -33,7 +33,7 @@ export default function Activity2UI() {
   useEffect(() => {
     const initSession = async () => {
       try {
-        const res = await fetch(`http://localhost:8001/api/session/start?activity_id=A2&force_new=${localStorage.getItem('forceNewSession') === 'true'}`, { method: 'POST' });
+        const res = await fetch(`http://localhost:8000/api/session/start?activity_id=A2&force_new=${localStorage.getItem('forceNewSession') === 'true'}`, { method: 'POST' });
         const data = await res.json();
         setSessionId(data.session_id);
       } catch(e) { 
@@ -107,7 +107,7 @@ export default function Activity2UI() {
     const avg_latency = TASKS.length > 0 ? totalLatency / TASKS.length : 0;
     
     try {
-      await fetch("http://localhost:8001/api/activities/a2/submit", {
+      await fetch("http://localhost:8000/api/activities/a2/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -122,7 +122,7 @@ export default function Activity2UI() {
         })
       });
       // End the session
-      await fetch(`http://localhost:8001/api/session/end?session_id=${sessionId || "demo-session-a2"}`, { method: 'POST' });
+      await fetch(`http://localhost:8000/api/session/end?session_id=${sessionId || "demo-session-a2"}`, { method: 'POST' });
     } catch (e) {
       console.error("Failed to submit metrics", e);
     }

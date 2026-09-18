@@ -19,7 +19,7 @@ export default function ReportsView() {
   useEffect(() => {
     if (selectedReportId) {
       setReportDetails(null);
-      fetch(`http://localhost:8001/api/reports/${selectedReportId}`)
+      fetch(`http://localhost:8000/api/reports/${selectedReportId}`)
         .then(res => res.json())
         .then(json => {
           setReportDetails(json.sections);
@@ -30,7 +30,7 @@ export default function ReportsView() {
 
 
     useEffect(() => {
-    fetch("http://localhost:8001/api/reports")
+    fetch("http://localhost:8000/api/reports")
       .then(res => res.json())
       .then(json => {
         if (json.reports && json.reports.length > 0) {

@@ -28,7 +28,7 @@ export default function DashboardHome() {
 
   useEffect(() => {
     setIsMounted(true);
-    fetch(selectedDate ? `http://localhost:8001/api/dashboard?date=${selectedDate}` : "http://localhost:8001/api/dashboard")
+    fetch(selectedDate ? `http://localhost:8000/api/dashboard?date=${selectedDate}` : "http://localhost:8000/api/dashboard")
       .then(res => res.json())
       .then(json => {
         if (json.stats) {

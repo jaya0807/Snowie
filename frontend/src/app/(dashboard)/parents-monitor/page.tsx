@@ -54,7 +54,7 @@ function LiveSessionContent() {
 
   useEffect(() => {
     const connect = () => {
-      const ws = new WebSocket("ws://localhost:8001/api/ws/session");
+      const ws = new WebSocket("ws://localhost:8000/api/ws/session");
       wsRef.current = ws;
 
       ws.onopen = () => {
@@ -152,7 +152,8 @@ function LiveSessionContent() {
         setTimeout(connect, 3000);
       };
 
-      ws.onerror = () => {
+      ws.onerror = (e) => {
+        console.warn("Parents Monitor WS Error:", e);
         ws.close();
       };
     };

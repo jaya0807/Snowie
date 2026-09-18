@@ -9,7 +9,7 @@ export default function TrackPage() {
   const [selectedDate, setSelectedDate] = useState<string>("");
 
   useEffect(() => {
-    fetch(selectedDate ? `http://localhost:8001/api/track/trends?date=${selectedDate}` : "http://localhost:8001/api/track/trends")
+    fetch(selectedDate ? `http://localhost:8000/api/track/trends?date=${selectedDate}` : "http://localhost:8000/api/track/trends")
       .then(res => res.json())
       .then(resData => {
         if (resData.history && Array.isArray(resData.history) && resData.history.length > 0) {

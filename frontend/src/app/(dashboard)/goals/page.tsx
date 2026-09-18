@@ -6,7 +6,7 @@ export default function GoalsPage() {
   const [goals, setGoals] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:8001/api/grow/goals")
+    fetch("http://localhost:8000/api/grow/goals")
       .then(res => res.json())
       .then(data => setGoals(data))
       .catch(err => console.error(err));
