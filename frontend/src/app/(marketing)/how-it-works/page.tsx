@@ -46,7 +46,7 @@ export default function HowItWorksPage() {
             </motion.div>
             
             <div className="relative md:absolute md:left-1/2 top-0 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-12 h-12 rounded-full bg-brand text-white flex items-center justify-center font-bold shadow-lg shadow-brand/30 border-4 border-zinc-50 z-10 shrink-0 order-1 md:order-2">
-              <Play className="w-5 h-5 ml-1" />
+              <Play className="w-5 h-5 translate-x-[1px]" fill="currentColor" />
             </div>
             
             <div className="md:w-5/12 pl-0 md:pl-8 flex justify-center md:justify-start order-3">
@@ -66,7 +66,7 @@ export default function HowItWorksPage() {
                   transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
                   className="relative z-10 w-16 h-16 bg-white shadow-xl shadow-brand/20 rounded-full flex items-center justify-center text-brand"
                 >
-                  <Play className="w-6 h-6 ml-1" />
+                  <Play className="w-6 h-6 translate-x-[2px]" fill="currentColor" />
                 </motion.div>
               </motion.div>
             </div>
