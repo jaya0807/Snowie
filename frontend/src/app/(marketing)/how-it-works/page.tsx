@@ -33,7 +33,7 @@ export default function HowItWorksPage() {
           {/* Vertical Connecting Line */}
           <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-zinc-200 -translate-x-1/2"></div>
 
-          {/* Step 1 */}
+          {/* Step 1: Play Activity */}
           <div className="relative flex flex-col md:flex-row items-center justify-between mb-16 md:mb-24 gap-8 md:gap-0">
             <motion.div 
               initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
@@ -52,14 +52,27 @@ export default function HowItWorksPage() {
             <div className="md:w-5/12 pl-0 md:pl-8 flex justify-center md:justify-start order-3">
               <motion.div 
                 initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
-                className="w-full max-w-sm aspect-video bg-zinc-200 rounded-2xl shadow-sm border border-black/5 overflow-hidden relative group"
+                className="w-full max-w-sm aspect-video bg-white rounded-2xl shadow-sm border border-black/5 overflow-hidden relative group flex items-center justify-center"
               >
-                <video src="/assets/how-it-works/step1.mp4" autoPlay loop muted playsInline className="w-full h-full object-cover" />
+                {/* Abstract animated game scene */}
+                <div className="absolute inset-0 bg-indigo-50"></div>
+                <motion.div 
+                  animate={{ x: [-50, 50, -50], y: [-20, 20, -20] }}
+                  transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
+                  className="absolute w-20 h-20 bg-brand/20 rounded-full blur-xl"
+                />
+                <motion.div 
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                  className="relative z-10 w-16 h-16 bg-white shadow-xl shadow-brand/20 rounded-full flex items-center justify-center text-brand"
+                >
+                  <Play className="w-6 h-6 ml-1" />
+                </motion.div>
               </motion.div>
             </div>
           </div>
 
-          {/* Step 2 */}
+          {/* Step 2: Invisible Analysis */}
           <div className="relative flex flex-col md:flex-row-reverse items-center justify-between mb-16 md:mb-24 gap-8 md:gap-0">
             <motion.div 
               initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
@@ -78,14 +91,43 @@ export default function HowItWorksPage() {
             <div className="md:w-5/12 pr-0 md:pr-8 flex justify-center md:justify-end order-3">
               <motion.div 
                 initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
-                className="w-full max-w-sm aspect-video bg-zinc-200 rounded-2xl shadow-sm border border-black/5 overflow-hidden relative group"
+                className="w-full max-w-sm aspect-video bg-white rounded-2xl shadow-sm border border-black/5 p-6 flex flex-col justify-center gap-4 relative overflow-hidden"
               >
-                <video src="/assets/how-it-works/step2.mp4" autoPlay loop muted playsInline className="w-full h-full object-cover" />
+                <div className="flex items-center gap-3">
+                  <div className="w-20 text-xs font-semibold text-zinc-400 uppercase">Focus</div>
+                  <div className="flex-1 h-2.5 bg-zinc-100 rounded-full overflow-hidden">
+                    <motion.div 
+                      animate={{ width: ["30%", "90%", "60%", "85%"] }}
+                      transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                      className="h-full bg-brand rounded-full"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-20 text-xs font-semibold text-zinc-400 uppercase">Posture</div>
+                  <div className="flex-1 h-2.5 bg-zinc-100 rounded-full overflow-hidden">
+                    <motion.div 
+                      animate={{ width: ["80%", "40%", "95%", "70%"] }}
+                      transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 0.5 }}
+                      className="h-full bg-green-400 rounded-full"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-20 text-xs font-semibold text-zinc-400 uppercase">Motor</div>
+                  <div className="flex-1 h-2.5 bg-zinc-100 rounded-full overflow-hidden">
+                    <motion.div 
+                      animate={{ width: ["10%", "50%", "20%", "40%"] }}
+                      transition={{ repeat: Infinity, duration: 3, ease: "easeInOut", delay: 1 }}
+                      className="h-full bg-orange-400 rounded-full"
+                    />
+                  </div>
+                </div>
               </motion.div>
             </div>
           </div>
 
-          {/* Step 3 */}
+          {/* Step 3: Track Progress */}
           <div className="relative flex flex-col md:flex-row items-center justify-between mb-16 md:mb-24 gap-8 md:gap-0">
             <motion.div 
               initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
@@ -104,14 +146,22 @@ export default function HowItWorksPage() {
             <div className="md:w-5/12 pl-0 md:pl-8 flex justify-center md:justify-start order-3">
                <motion.div 
                  initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
-                 className="w-full max-w-sm aspect-video bg-zinc-200 rounded-2xl shadow-sm border border-black/5 overflow-hidden relative group"
+                 className="w-full max-w-sm aspect-video bg-white rounded-2xl shadow-sm border border-black/5 p-6 relative flex items-end gap-3 justify-center"
                >
-                 <video src="/assets/how-it-works/step3.mp4" autoPlay loop muted playsInline className="w-full h-full object-cover" />
+                 {[0.2, 0.4, 0.1, 0.6, 0.3, 0.8].map((delay, i) => (
+                   <motion.div 
+                     key={i}
+                     initial={{ height: "10%" }}
+                     animate={{ height: ["10%", `${40 + (i * 10)}%`, `${30 + (i * 12)}%`, `${50 + (i * 8)}%`] }}
+                     transition={{ repeat: Infinity, duration: 4, delay: delay, ease: "easeInOut" }}
+                     className="w-8 bg-brand-light rounded-t-md"
+                   />
+                 ))}
                </motion.div>
             </div>
           </div>
 
-          {/* Step 4 */}
+          {/* Step 4: Clinical Reporting */}
           <div className="relative flex flex-col md:flex-row-reverse items-center justify-between gap-8 md:gap-0">
             <motion.div 
               initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
@@ -130,9 +180,21 @@ export default function HowItWorksPage() {
             <div className="md:w-5/12 pr-0 md:pr-8 flex justify-center md:justify-end order-3">
               <motion.div 
                 initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
-                className="w-full max-w-sm aspect-video bg-zinc-200 rounded-2xl shadow-sm border border-black/5 overflow-hidden relative group"
+                className="w-full max-w-sm aspect-video bg-white rounded-2xl shadow-sm border border-black/5 p-6 flex flex-col gap-3 justify-center"
               >
-                <video src="/assets/how-it-works/step4.mp4" autoPlay loop muted playsInline className="w-full h-full object-cover" />
+                <motion.div 
+                  initial={{ opacity: 0.2 }} animate={{ opacity: [0.2, 1, 0.2] }} transition={{ repeat: Infinity, duration: 3 }}
+                  className="w-1/3 h-4 bg-zinc-200 rounded-full mb-2" 
+                />
+                {[0, 0.5, 1, 1.5, 2].map((delay, i) => (
+                  <motion.div 
+                    key={i}
+                    initial={{ scaleX: 0, opacity: 0, originX: 0 }}
+                    animate={{ scaleX: [0, 1, 1, 0], opacity: [0, 1, 1, 0] }}
+                    transition={{ repeat: Infinity, duration: 6, delay: delay, times: [0, 0.1, 0.8, 1] }}
+                    className={`h-2 bg-zinc-100 rounded-full ${i % 2 === 0 ? 'w-full' : 'w-4/5'}`} 
+                  />
+                ))}
               </motion.div>
             </div>
           </div>
