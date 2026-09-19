@@ -25,43 +25,33 @@ export function Footer() {
           </div>
           
           <div>
-            <h4 className="font-semibold text-zinc-900 mb-4">Product</h4>
+            <h4 className="font-semibold text-zinc-900 mb-4">Platform</h4>
             <ul className="space-y-3 text-sm text-zinc-500">
-              <li><Link href="#" className="hover:text-brand transition-colors">Features</Link></li>
-              <li><Link href="#" className="hover:text-brand transition-colors">Security</Link></li>
-              <li><Link href="#" className="hover:text-brand transition-colors">For Professionals</Link></li>
-              <li><Link href="#" className="hover:text-brand transition-colors">Pricing</Link></li>
+              <li><Link href="/" className="hover:text-brand transition-colors">Home</Link></li>
+              <li><Link href="/login" className="hover:text-brand transition-colors">Parent Portal</Link></li>
+              <li><Link href="/professional" className="hover:text-brand transition-colors">Doctor Portal</Link></li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-semibold text-zinc-900 mb-4">Resources</h4>
+            <h4 className="font-semibold text-zinc-900 mb-4">Support</h4>
             <ul className="space-y-3 text-sm text-zinc-500">
-              <li><Link href="#" className="hover:text-brand transition-colors">Documentation</Link></li>
-              <li><Link href="#" className="hover:text-brand transition-colors">Help Center</Link></li>
-              <li><Link href="#" className="hover:text-brand transition-colors">Guidelines</Link></li>
-              <li><Link href="#" className="hover:text-brand transition-colors">Community</Link></li>
+              <li><a href="mailto:support@snowie.app" className="hover:text-brand transition-colors">Contact Us</a></li>
+              <li><a href="mailto:support@snowie.app?subject=Help" className="hover:text-brand transition-colors">Help Center</a></li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-semibold text-zinc-900 mb-4">Company</h4>
+            <h4 className="font-semibold text-zinc-900 mb-4">Legal</h4>
             <ul className="space-y-3 text-sm text-zinc-500">
-              <li><Link href="#" className="hover:text-brand transition-colors">About Us</Link></li>
-              <li><Link href="#" className="hover:text-brand transition-colors">Careers</Link></li>
-              <li><Link href="/contact" className="hover:text-brand transition-colors">Contact</Link></li>
-              <li><Link href="#" className="hover:text-brand transition-colors">Privacy Policy</Link></li>
+              <li><span className="cursor-not-allowed">Privacy Policy</span></li>
+              <li><span className="cursor-not-allowed">Terms of Service</span></li>
             </ul>
           </div>
         </div>
 
         <div className="pt-8 border-t border-zinc-100 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-zinc-400">
           <p>© {new Date().getFullYear()} Snowie. All rights reserved.</p>
-          <div className="flex gap-6">
-            <Link href="#" className="hover:text-zinc-600 transition-colors">Terms</Link>
-            <Link href="#" className="hover:text-zinc-600 transition-colors">Privacy</Link>
-            <Link href="#" className="hover:text-zinc-600 transition-colors">Cookies</Link>
-          </div>
         </div>
       </div>
     </footer>
