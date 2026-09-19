@@ -29,10 +29,10 @@ export function LandingNavbar() {
         <Link href="/" className={getLinkClass("/")}>
           Home
         </Link>
-        <Link href="/#about" className={getLinkClass("/#about")}>
+        <Link href="/about" className={getLinkClass("/about")}>
           About Us
         </Link>
-        <Link href="/#how-it-works" className={getLinkClass("/#how-it-works")}>
+        <Link href="/how-it-works" className={getLinkClass("/how-it-works")}>
           How It Works
         </Link>
         <Link href="/contact" className={getLinkClass("/contact")}>

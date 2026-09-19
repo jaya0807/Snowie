@@ -37,7 +37,7 @@ export default function LandingPage() {
               href="/professional" 
               className="flex items-center justify-center gap-2 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-900 px-8 py-3.5 rounded-xl font-medium transition-all shadow-sm"
             >
-              For Professionals
+              Doctor Login
             </Link>
           </div>
         </div>

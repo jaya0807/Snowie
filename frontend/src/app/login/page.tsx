@@ -111,12 +111,11 @@ function AuthContent() {
                   onClick={() => setLoginRole('clinician')}
                   className={`flex-1 text-xs font-bold uppercase tracking-wider py-2.5 rounded-lg transition-all ${loginRole === 'clinician' ? 'bg-white text-brand shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
                 >
-                  Clinician
+                  Doctor
                 </button>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-
                 <div>
                   <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wider mb-1.5">Email Address</label>
                   <div className="relative">
@@ -135,13 +134,15 @@ function AuthContent() {
                   <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wider mb-1.5">Password</label>
                   <div className="relative">
                     <Lock className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" className="w-full pl-10 pr-11 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder:text-zinc-400 focus:bg-white focus:border-brand focus:ring-4 focus:ring-brand/10 outline-none" required />
+                    <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" className="w-full pl-10 pr-10 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder:text-zinc-400 focus:bg-white focus:border-brand focus:ring-4 focus:ring-brand/10 outline-none" required />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 p-1">
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
-                <Button type="submit" variant="secondary" size="lg" isLoading={isLoading} className="w-full mt-2">Login</Button>
+                <Button type="submit" variant="secondary" size="lg" isLoading={isLoading} className="w-full mt-2">
+                  Login as {loginRole === 'clinician' ? 'Doctor' : 'Parent'}
+                </Button>
               </form>
               <div className="mt-6 pt-5 border-t border-zinc-100 text-center">
                 <span className="text-xs text-zinc-500 mr-1.5">Don't have an account yet?</span>
