@@ -27,14 +27,14 @@ export default function HowItWorksPage() {
           <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-zinc-200 -translate-x-1/2"></div>
 
           {/* Step 1 */}
-          <div className="relative flex flex-col md:flex-row items-center justify-between mb-16 md:mb-24">
-            <div className="md:w-5/12 text-center md:text-right mb-6 md:mb-0 pr-0 md:pr-8">
+          <div className="relative flex flex-col md:flex-row items-center justify-between mb-16 md:mb-24 gap-8 md:gap-0">
+            <div className="md:w-5/12 text-center md:text-right  pr-0 md:pr-8">
               <h3 className="text-2xl font-bold text-zinc-900 mb-2">1. Play an Activity</h3>
               <p className="text-zinc-500 leading-relaxed">
                 Parents launch engaging, story-driven activities for their child. From pirate adventures to space exploration, each activity is designed to elicit specific behavioral responses.
               </p>
             </div>
-            <div className="absolute left-1/2 top-0 md:top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-brand text-white flex items-center justify-center font-bold shadow-lg shadow-brand/30 border-4 border-zinc-50 z-10">
+            <div className="relative md:absolute md:left-1/2 top-0 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-12 h-12 rounded-full bg-brand text-white flex items-center justify-center font-bold shadow-lg shadow-brand/30 border-4 border-zinc-50 z-10 shrink-0">
               <Play className="w-5 h-5 ml-1" />
             </div>
             <div className="md:w-5/12 pl-0 md:pl-8 flex justify-center md:justify-start">
@@ -50,14 +50,14 @@ export default function HowItWorksPage() {
           </div>
 
           {/* Step 2 */}
-          <div className="relative flex flex-col md:flex-row-reverse items-center justify-between mb-16 md:mb-24">
-            <div className="md:w-5/12 text-center md:text-left mb-6 md:mb-0 pl-0 md:pl-8">
+          <div className="relative flex flex-col md:flex-row-reverse items-center justify-between mb-16 md:mb-24 gap-8 md:gap-0">
+            <div className="md:w-5/12 text-center md:text-left  pl-0 md:pl-8">
               <h3 className="text-2xl font-bold text-zinc-900 mb-2">2. Invisible Analysis</h3>
               <p className="text-zinc-500 leading-relaxed">
                 As the child plays, our underlying AI engine processes webcam telemetry in real-time. We track gaze patterns, motor tics, facial expressions, and posture—all without storing raw video.
               </p>
             </div>
-            <div className="absolute left-1/2 top-0 md:top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-brand text-white flex items-center justify-center font-bold shadow-lg shadow-brand/30 border-4 border-zinc-50 z-10">
+            <div className="relative md:absolute md:left-1/2 top-0 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-12 h-12 rounded-full bg-brand text-white flex items-center justify-center font-bold shadow-lg shadow-brand/30 border-4 border-zinc-50 z-10 shrink-0">
               <Sparkles className="w-5 h-5" />
             </div>
             <div className="md:w-5/12 pr-0 md:pr-8 flex justify-center md:justify-end">
@@ -71,14 +71,14 @@ export default function HowItWorksPage() {
           </div>
 
           {/* Step 3 */}
-          <div className="relative flex flex-col md:flex-row items-center justify-between mb-16 md:mb-24">
-            <div className="md:w-5/12 text-center md:text-right mb-6 md:mb-0 pr-0 md:pr-8">
+          <div className="relative flex flex-col md:flex-row items-center justify-between mb-16 md:mb-24 gap-8 md:gap-0">
+            <div className="md:w-5/12 text-center md:text-right  pr-0 md:pr-8">
               <h3 className="text-2xl font-bold text-zinc-900 mb-2">3. Track Progress</h3>
               <p className="text-zinc-500 leading-relaxed">
                 Accuracy, response latency, and attention metrics are aggregated into beautiful, easy-to-read dashboards. Parents can see clear trends and know exactly where their child stands.
               </p>
             </div>
-            <div className="absolute left-1/2 top-0 md:top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-brand text-white flex items-center justify-center font-bold shadow-lg shadow-brand/30 border-4 border-zinc-50 z-10">
+            <div className="relative md:absolute md:left-1/2 top-0 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-12 h-12 rounded-full bg-brand text-white flex items-center justify-center font-bold shadow-lg shadow-brand/30 border-4 border-zinc-50 z-10 shrink-0">
               <LineChart className="w-5 h-5" />
             </div>
             <div className="md:w-5/12 pl-0 md:pl-8 flex justify-center md:justify-start">
@@ -91,14 +91,14 @@ export default function HowItWorksPage() {
           </div>
 
           {/* Step 4 */}
-          <div className="relative flex flex-col md:flex-row-reverse items-center justify-between">
-            <div className="md:w-5/12 text-center md:text-left mb-6 md:mb-0 pl-0 md:pl-8">
+          <div className="relative flex flex-col md:flex-row-reverse items-center justify-between gap-8 md:gap-0">
+            <div className="md:w-5/12 text-center md:text-left  pl-0 md:pl-8">
               <h3 className="text-2xl font-bold text-zinc-900 mb-2">4. Clinical Reporting</h3>
               <p className="text-zinc-500 leading-relaxed">
                 When it's time for an evaluation, Snowie generates a comprehensive, AI-summarized clinical report for doctors. No more subjective guessing—just hard, behavioral evidence.
               </p>
             </div>
-            <div className="absolute left-1/2 top-0 md:top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-brand text-white flex items-center justify-center font-bold shadow-lg shadow-brand/30 border-4 border-zinc-50 z-10">
+            <div className="relative md:absolute md:left-1/2 top-0 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-12 h-12 rounded-full bg-brand text-white flex items-center justify-center font-bold shadow-lg shadow-brand/30 border-4 border-zinc-50 z-10 shrink-0">
               <FileText className="w-5 h-5" />
             </div>
             <div className="md:w-5/12 pr-0 md:pr-8 flex justify-center md:justify-end">
