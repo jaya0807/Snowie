@@ -11,7 +11,7 @@ export default function BackgroundScene() {
         <div className="absolute top-40 right-1/3 opacity-60"><GiStarsStack className="text-white text-4xl" /></div>
         <div className="absolute top-32 left-10 opacity-70"><FaCloud className="text-indigo-200/20 text-[200px]" /></div>
         <div className="absolute top-10 right-1/4 opacity-50"><FaCloud className="text-purple-200/20 text-[150px]" /></div>
-        <div className="absolute bottom-1/2 left-1/4 opacity-30 animate-bounce" style={{animationDuration: '10s'}}><GiRingedPlanet className="text-indigo-400 text-[120px]" /></div>
+        <div className="absolute bottom-1/2 left-1/4 opacity-30 animate-bounce duration-10s"><GiRingedPlanet className="text-indigo-400 text-[120px]" /></div>
       </div>
 
       {/* Middle Layer: Hills, castle, rocket */}
@@ -26,8 +26,8 @@ export default function BackgroundScene() {
         <div className="absolute bottom-[20%] right-[10%] opacity-80"><GiCastle className="text-indigo-900 text-[200px]" /></div>
         <div className="absolute bottom-[10%] left-[5%] opacity-70"><GiPineTree className="text-purple-900 text-[150px]" /></div>
         <div className="absolute bottom-[15%] left-[15%] opacity-60"><GiPineTree className="text-purple-800 text-[100px]" /></div>
-        <div className="absolute top-[10%] left-[40%] animate-pulse" style={{animationDuration: '6s'}}><GiRocketFlight className="text-pink-300/40 text-[80px]" /></div>
-        <div className="absolute top-0 right-[30%] animate-bounce" style={{animationDuration: '8s'}}><GiAirBalloon className="text-orange-300/30 text-[100px]" /></div>
+        <div className="absolute top-[10%] left-[40%] animate-pulse duration-6s"><GiRocketFlight className="text-pink-300/40 text-[80px]" /></div>
+        <div className="absolute top-0 right-[30%] animate-bounce duration-8s"><GiAirBalloon className="text-orange-300/30 text-[100px]" /></div>
       </div>
 
       {/* Foreground Layer */}

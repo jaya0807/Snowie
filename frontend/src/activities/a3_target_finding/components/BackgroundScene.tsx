@@ -12,7 +12,7 @@ export default function BackgroundScene() {
 
       {/* Middle Layer: Pirate Ship and Island */}
       <div className="absolute bottom-[20%] w-full h-1/2 z-10 pointer-events-none">
-        <div className="absolute bottom-[30%] right-[5%] animate-pulse" style={{animationDuration: '6s'}}><GiGalleon className="text-[#8B4513] text-[250px] drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]" /></div>
+        <div className="absolute bottom-[30%] right-[5%] animate-pulse duration-6s"><GiGalleon className="text-[#8B4513] text-[250px] drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]" /></div>
         <div className="absolute bottom-[-10%] left-[-5%]"><GiIsland className="text-[#DEB887] text-[400px]" /></div>
         <div className="absolute bottom-[20%] left-[10%]"><GiPalmTree className="text-[#228B22] text-[180px] drop-shadow-xl" /></div>
         <div className="absolute bottom-[10%] left-[25%]"><GiPalmTree className="text-[#228B22] text-[120px] drop-shadow-xl" /></div>

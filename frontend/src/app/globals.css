@@ -154,7 +154,7 @@
 
 /* Stripe-like elevated cards */
 .glass, .glass-panel, .glass-light, .glass-dark {
-  background: #ffffff;
+  background: var(--card);
   color: inherit;
   border: 1px solid rgba(0, 0, 0, 0.05);
   box-shadow: 0 4px 14px 0 rgba(23, 107, 156, 0.12), 0 2px 4px 0 rgba(23, 107, 156, 0.06);
@@ -163,37 +163,46 @@
 
 /* Global Button Classes */
 .btn-primary {
-  background-color: #18181b;
+  background-color: var(--color-zinc-900, #18181b);
   color: #ffffff;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.15), 0 2px 4px 0 rgba(0, 0, 0, 0.05);
 }
 .btn-primary:hover {
-  background-color: #27272a;
+  background-color: var(--color-zinc-800, #27272a);
 }
 .btn-warning {
-  background-color: #fef3c7;
-  color: #b45309;
-  border: 1px solid #fde68a;
-  border-radius: 8px;
+  background-color: var(--color-warning-bg);
+  color: var(--color-amber-700, #b45309);
+  border: 1px solid var(--color-warning-light);
+  border-radius: var(--radius-lg);
   box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.15), 0 2px 4px 0 rgba(0, 0, 0, 0.05);
 }
 .btn-warning:hover {
-  background-color: #fde68a;
+  background-color: var(--color-warning-light);
 }
-
-
 .btn-secondary {
-  background-color: #ffffff;
-  color: #18181b;
+  background-color: var(--card);
+  color: var(--foreground);
   border: 1px solid rgba(0, 0, 0, 0.05);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 4px 14px 0 rgba(23, 107, 156, 0.12), 0 2px 4px 0 rgba(23, 107, 156, 0.06);
 }
 .btn-secondary:hover {
-  background-color: #fafafa;
+  background-color: var(--color-brand-surface);
 }
+
+/* Animation duration utility classes */
+.duration-3s  { animation-duration: 3s; }
+.duration-4s  { animation-duration: 4s; }
+.duration-6s  { animation-duration: 6s; }
+.duration-8s  { animation-duration: 8s; }
+.duration-10s { animation-duration: 10s; }
+.duration-20s { animation-duration: 20s; }
+
+/* Animation delay utility classes */
+.delay-1s { animation-delay: 1s; }
 
 @keyframes float {
   0%, 100% { transform: translateY(0); }
@@ -215,4 +224,3 @@
   0% { opacity: 0; }
   100% { opacity: 1; }
 }
-

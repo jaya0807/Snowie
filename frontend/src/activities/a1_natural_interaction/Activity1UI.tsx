@@ -33,6 +33,7 @@ export default function Activity1UI() {
   const [dayText, setDayText] = useState("");
   
   const { isListening, toggleListen } = useVoiceRecognition(stepIndex, setName, setDayText);
+  const handleExit = () => router.push("/dashboard");
 
   const handleNextStep = async () => {
     setFeedbackState(null);
@@ -88,7 +89,7 @@ export default function Activity1UI() {
 
       {/* Close Button */}
       <button 
-        onClick={() => router.push('/dashboard')}
+        onClick={handleExit}
         className="fixed top-6 left-4 md:left-6 z-50 bg-white/50 hover:bg-white p-3 rounded-full backdrop-blur transition-all shadow-sm"
       >
         <X className="w-6 h-6 text-zinc-600" />

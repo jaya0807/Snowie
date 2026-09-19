@@ -5,6 +5,7 @@ import {
   AuthUser,
   ParentLoginCredentials,
   parentLogin as serviceParentLogin,
+  clinicianLogin as serviceClinicianLogin,
   logout as serviceLogout,
   getStoredSession,
 } from "@/services/authService";
@@ -12,9 +13,10 @@ import { useRouter } from "next/navigation";
 
 interface AuthContextType {
   user: AuthUser | null;
-  role: "parent" | null;
+  role: "parent" | "clinician" | null;
   isLoading: boolean;
   loginParent: (creds: ParentLoginCredentials) => Promise<{ success: boolean; error?: string }>;
+  loginClinician: (creds: { email: string; password?: string }) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -43,6 +45,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { success: false, error: res.error };
   };
 
+  
+  const loginClinician = async (creds: { email: string; password?: string }) => {
+    const res = await serviceClinicianLogin(creds);
+    if (res.success && res.user) {
+      setUser(res.user);
+      return { success: true };
+    }
+    return { success: false, error: res.error };
+  };
+
   const logout = async () => {
     await serviceLogout();
     setUser(null);
@@ -56,6 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: user?.role || null,
         isLoading,
         loginParent,
+        loginClinician,
         logout,
       }}
     >

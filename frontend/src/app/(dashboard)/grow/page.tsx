@@ -63,7 +63,7 @@ return (
                     <Play className="w-4 h-4 text-brand shrink-0" />
                     <div>
                       <p className="text-xs font-bold text-zinc-900">{item.activity}</p>
-                      <p className="text-[10px] text-zinc-500 uppercase">Difficulty: {item.difficulty}</p>
+                      <p className="text-xs text-zinc-500 uppercase">Difficulty: {item.difficulty}</p>
                     </div>
                   </div>
                 </div>

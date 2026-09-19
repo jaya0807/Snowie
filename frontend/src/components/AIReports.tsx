@@ -59,7 +59,7 @@ export function AIReports({ patientId: propPatientId, isClinicianView = false }:
       <div className="flex items-center justify-between">
         <div>
           {!isClinicianView && (
-            <div className="flex items-center gap-2 text-[10px] text-zinc-400 font-semibold tracking-wider uppercase mb-1">
+            <div className="flex items-center gap-2 text-xs text-zinc-400 font-semibold tracking-wider uppercase mb-1">
               <span>Dashboard</span>
               <ChevronRight className="w-3 h-3" />
               <span className="text-brand">AI Reports</span>
@@ -111,17 +111,17 @@ export function AIReports({ patientId: propPatientId, isClinicianView = false }:
               onClick={() => setSelectedReportId(report.id)}
               className={`p-4 rounded-xl border cursor-pointer transition-all ${
                 selectedReportId === report.id 
-                  ? "bg-white border-brand shadow-[0_4px_14px_0_rgba(23,107,156,0.12)] ring-1 ring-brand/20" 
+                  ? "bg-white border-brand shadow-lg shadow-brand/10 ring-1 ring-brand/20" 
                   : "bg-zinc-50 border-black/5 hover:bg-white hover:shadow-sm hover:border-black/10"
               }`}
             >
               <div className="flex justify-between items-start mb-2">
                 <span className="text-xs font-bold text-brand uppercase tracking-wider">{report.id}</span>
-                <span className="text-[10px] text-zinc-500 font-medium">{report.date}</span>
+                <span className="text-xs text-zinc-500 font-medium">{report.date}</span>
               </div>
               <h3 className="font-semibold text-zinc-900 text-sm mb-1">{report.type}</h3>
               <div className="flex justify-between items-center mt-3">
-                <Badge variant="outline" className="bg-brand/5 text-brand border-brand/20 text-[10px]">
+                <Badge variant="outline" className="bg-brand/5 text-brand border-brand/20 text-xs">
                   {report.status}
                 </Badge>
                 <ChevronRight className={`w-4 h-4 ${selectedReportId === report.id ? "text-brand" : "text-zinc-300"}`} />

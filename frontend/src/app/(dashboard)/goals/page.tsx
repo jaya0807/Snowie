@@ -41,7 +41,7 @@ export default function GoalsPage() {
                   <div className={`w-2 h-2 rounded-full ${goal.status === 'ACTIVE' ? 'bg-success' : 'bg-warning'}`}></div>
                   <h3 className="font-semibold text-zinc-900">{goal.domain}</h3>
                 </div>
-                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
                   goal.status === 'ACTIVE' ? 'bg-success-light/20 text-success-dark' : 'bg-warning-light/20 text-warning-dark'
                 }`}>
                   {goal.status}

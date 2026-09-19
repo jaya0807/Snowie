@@ -1,13 +1,34 @@
+"use client";
 import React from "react";
 import Link from "next/link";
 import { Users, LogOut } from "lucide-react";
 import { Logo } from "@/components/common/Logo";
+
+
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function ProfessionalLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { role, isLoading, logout } = useAuth();
+  const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    if (!isLoading && role !== "clinician") {
+      router.push("/login");
+    }
+  }, [role, isLoading, router]);
+
+  if (!mounted || isLoading || role !== "clinician") {
+    return <div className="flex h-screen items-center justify-center bg-white"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div></div>;
+  }
+
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden relative font-sans">
       

@@ -69,6 +69,29 @@ export async function parentLogin(
   }
 }
 
+
+export async function clinicianLogin(
+  credentials: { email: string; password?: string }
+): Promise<{ success: boolean; user?: AuthUser; error?: string }> {
+  try {
+    const res = await apiRequest("/api/auth/clinician/login", {
+      method: "POST",
+      body: JSON.stringify(credentials),
+    });
+
+    if (res.status === 200 && res.data && res.data.status === "success") {
+      const user: ParentUser = { ...res.data.user, role: "clinician" };
+      setStoredSession(res.data.user.token, user);
+      return { success: true, user };
+    }
+    
+    return { success: false, error: res.error || res.data?.message || "Invalid credentials" };
+
+  } catch (error: any) {
+    console.error("Login failed:", error);
+    return { success: false, error: "Network error. Please try again." };
+  }
+}
 export async function logout(): Promise<void> {
   clearStoredSession();
   try {

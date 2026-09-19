@@ -58,7 +58,7 @@ export function ParentDashboard({ patientId: propPatientId, isClinicianView = fa
     <div className="space-y-4 h-full flex flex-col">
       <div className="flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-2 text-[10px] text-zinc-400 font-semibold tracking-wider uppercase mb-1">
+          <div className="flex items-center gap-2 text-xs text-zinc-400 font-semibold tracking-wider uppercase mb-1">
             <span>Dashboard</span>
             <span className="w-1 h-1 rounded-full bg-zinc-300" />
             <span className="text-brand">Overview</span>
@@ -81,7 +81,7 @@ export function ParentDashboard({ patientId: propPatientId, isClinicianView = fa
         {statsList.map((stat, i) => (
           <Card key={i} className="glass group hover:bg-white transition-all duration-300 relative overflow-hidden flex flex-col">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-              <CardTitle className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">{stat.label}</CardTitle>
+              <CardTitle className="text-xs font-bold uppercase tracking-wider text-zinc-500">{stat.label}</CardTitle>
               <div className="p-2 bg-brand/5 rounded-lg border border-brand/10">
                 <stat.icon className="w-4 h-4 text-brand" />
               </div>
@@ -125,7 +125,7 @@ export function ParentDashboard({ patientId: propPatientId, isClinicianView = fa
             </CardTitle>
             <input 
               type="date" 
-              className="text-[10px] text-zinc-500 bg-zinc-100/50 border border-black/5 rounded px-2 py-1 outline-none cursor-pointer hover:bg-zinc-100 transition-colors"
+              className="text-xs text-zinc-500 bg-zinc-100/50 border border-black/5 rounded px-2 py-1 outline-none cursor-pointer hover:bg-zinc-100 transition-colors"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
             />
@@ -144,9 +144,9 @@ export function ParentDashboard({ patientId: propPatientId, isClinicianView = fa
                   <YAxis domain={[0, 5]} axisLine={{ stroke: '#e4e4e7' }} tickLine={{ stroke: '#e4e4e7' }} tick={{ fontSize: 12, fill: '#71717a' }} />
                   <Tooltip 
                     contentStyle={{ borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                    itemStyle={{ color: '#176B9C', fontWeight: 600 }}
+                    itemStyle={{ color: 'var(--color-brand)', fontWeight: 600 }}
                   />
-                  <Line type="monotone" dataKey="latency" stroke="#176B9C" strokeWidth={3} dot={{ r: 4, strokeWidth: 0, fill: '#176B9C' }} activeDot={{ r: 6, strokeWidth: 0, fill: '#176B9C' }} />
+                  <Line type="monotone" dataKey="latency" stroke="var(--color-brand)" strokeWidth={3} dot={{ r: 4, strokeWidth: 0, fill: 'var(--color-brand)' }} activeDot={{ r: 6, strokeWidth: 0, fill: 'var(--color-brand)' }} />
                 </LineChart>
               </ResponsiveContainer>
             )}
@@ -162,7 +162,7 @@ export function ParentDashboard({ patientId: propPatientId, isClinicianView = fa
             </CardTitle>
             <input 
               type="date" 
-              className="text-[10px] text-zinc-500 bg-zinc-100/50 border border-black/5 rounded px-2 py-1 outline-none cursor-pointer hover:bg-zinc-100 transition-colors"
+              className="text-xs text-zinc-500 bg-zinc-100/50 border border-black/5 rounded px-2 py-1 outline-none cursor-pointer hover:bg-zinc-100 transition-colors"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
             />
@@ -181,9 +181,9 @@ export function ParentDashboard({ patientId: propPatientId, isClinicianView = fa
                   <YAxis domain={[0, 30]} axisLine={{ stroke: '#e4e4e7' }} tickLine={{ stroke: '#e4e4e7' }} tick={{ fontSize: 12, fill: '#71717a' }} />
                   <Tooltip 
                     contentStyle={{ borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                    itemStyle={{ color: '#176B9C', fontWeight: 600 }}
+                    itemStyle={{ color: 'var(--color-brand)', fontWeight: 600 }}
                   />
-                  <Line type="monotone" dataKey="duration" stroke="#176B9C" strokeWidth={3} dot={{ r: 4, strokeWidth: 0, fill: '#176B9C' }} activeDot={{ r: 6, strokeWidth: 0, fill: '#176B9C' }} />
+                  <Line type="monotone" dataKey="duration" stroke="var(--color-brand)" strokeWidth={3} dot={{ r: 4, strokeWidth: 0, fill: 'var(--color-brand)' }} activeDot={{ r: 6, strokeWidth: 0, fill: 'var(--color-brand)' }} />
                 </LineChart>
               </ResponsiveContainer>
             )}

@@ -165,7 +165,7 @@ export default function Activity5UI() {
                  
                  {/* Scene Objects */}
                  {currentTask.scene_objects.map((obj, i) => (
-                   <img key={i} src={`/assets/storyworld/${obj}.png`} alt={obj} className={`absolute z-40 w-28 h-28 lg:w-36 lg:h-36 drop-shadow-xl animate-bounce ${i === 0 ? '-top-10 -left-10 lg:-left-20' : '-bottom-5 -left-12 lg:-left-16'}`} style={{animationDuration: '3s', animationDelay: `${i}s`}} />
+                   <img key={i} src={`/assets/storyworld/${obj}.png`} alt={obj} className={`absolute z-40 w-28 h-28 lg:w-36 lg:h-36 drop-shadow-xl animate-bounce duration-3s ${i === 0 ? '-top-10 -left-10 lg:-left-20' : '-bottom-5 -left-12 lg:-left-16'}`} style={{animationDelay: `${i}s`}} />
                  ))}
 
                  <img src={`/assets/storyworld/characters/${currentTask.character}_${characterEmotion}.svg`} alt={currentTask.character} className="w-full h-full object-contain drop-shadow-2xl animate-[bounce_4s_ease-in-out_infinite]" />
@@ -221,7 +221,7 @@ export default function Activity5UI() {
 
         {sessionState === "outro" && (
            <div className="bg-white/95 backdrop-blur-md p-12 rounded-[3rem] shadow-2xl max-w-2xl text-center flex flex-col items-center border-8 border-green-200">
-             <img src="/assets/storyworld/sparkles.png" alt="Sparkles" className="w-32 h-32 mb-6 animate-spin" style={{animationDuration: '10s'}} />
+             <img src="/assets/storyworld/sparkles.png" alt="Sparkles" className="w-32 h-32 mb-6 animate-spin duration-10s" />
              <h1 className="text-5xl font-black text-green-600 mb-6 font-comic">🌈 You did amazing!</h1>
              <p className="text-2xl text-zinc-600 font-bold mb-10">You discovered lots of feelings and friendly ways to help!</p>
              <button onClick={() => finishActivity(false)} className="bg-green-500 hover:bg-green-400 text-white font-black text-3xl px-12 py-6 rounded-full shadow-[0_8px_0_#166534,0_15px_30px_rgba(34,197,94,0.4)] transition-all hover:-translate-y-2 active:translate-y-2 active:shadow-[0_0px_0_#166534] flex items-center gap-4">

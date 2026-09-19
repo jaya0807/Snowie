@@ -160,7 +160,7 @@ export default function Activity3UI() {
           </div>
           
           {/* Pirate Character */}
-          <div className="relative animate-bounce pointer-events-auto" style={{animationDuration: '4s'}}>
+          <div className="relative animate-bounce pointer-events-auto duration-4s">
             <GiPirateCaptain className="text-[#D2691E] text-[150px] drop-shadow-2xl bg-white/40 rounded-full" />
           </div>
         </div>
@@ -189,7 +189,7 @@ export default function Activity3UI() {
           ))}
 
           {sessionState === "celebrating" && (
-            <div className="animate-spin text-yellow-400" style={{animationDuration: '3s'}}>
+            <div className="animate-spin text-yellow-400 duration-3s">
               <GiStarMedal className="text-[120px] drop-shadow-[0_0_50px_rgba(255,215,0,1)]" />
             </div>
           )}

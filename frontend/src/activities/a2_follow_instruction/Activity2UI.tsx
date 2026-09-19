@@ -166,7 +166,7 @@ export default function Activity2UI() {
           </div>
           
           {/* Lumi Character */}
-          <div className="relative animate-bounce pointer-events-auto" style={{animationDuration: '3s'}}>
+          <div className="relative animate-bounce pointer-events-auto duration-3s">
             <GiFairy className="text-[#FFD700] text-[140px] drop-shadow-[0_0_30px_rgba(255,215,0,0.8)]" />
             <div className="absolute inset-0 animate-ping opacity-20"><GiFairy className="text-[#FFD700] text-[140px]" /></div>
           </div>
@@ -196,7 +196,7 @@ export default function Activity2UI() {
           ))}
 
           {sessionState === "celebrating" && (
-            <div className="animate-spin text-yellow-300" style={{animationDuration: '4s'}}>
+            <div className="animate-spin text-yellow-300 duration-4s">
               <GiStarsStack className="text-[120px] drop-shadow-[0_0_50px_rgba(255,255,0,0.8)]" />
             </div>
           )}

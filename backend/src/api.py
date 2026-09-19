@@ -787,6 +787,43 @@ def parent_login_endpoint(data: ParentLoginRequest):
     }
 
 
+
+@app.post("/api/auth/clinician/login")
+def clinician_login_endpoint(data: ParentLoginRequest):
+    email = data.email.strip()
+    password = data.password or "default_pass"
+    
+    if not email:
+        return {"status": "error", "message": "Email is required"}
+    
+    db = Database(DB_PATH)
+    password_hash = hashlib.sha256(password.encode()).hexdigest()
+    
+    user = db.get_user_by_email(email)
+    
+    if not user:
+        # Auto-register Clinician
+        user_id = "U-" + str(uuid.uuid4())[:8]
+        username = email.split("@")[0].replace(".", " ").title()
+        db.create_user(user_id, email, password_hash, username, "clinician")
+        user = {"id": user_id, "email": email, "name": username, "role": "clinician"}
+    else:
+        if user["password_hash"] != password_hash:
+            return {"status": "error", "message": "Invalid credentials"}
+        if user["role"] != "clinician":
+            return {"status": "error", "message": "Account is not a clinician account"}
+            
+    return {
+        "status": "success",
+        "user": {
+            "id":       user["id"],
+            "role":     user["role"],
+            "email":    user["email"],
+            "name":     user["name"],
+            "token":    f"auth_tok_{user['id']}_{int(time.time())}",
+        },
+    }
+
 @app.post("/api/auth/logout")
 def logout_endpoint():
     return {"status": "success", "message": "Logged out successfully"}
@@ -906,3 +943,48 @@ def get_clinician_patient_detail(patient_id: str):
         "notes": real_notes,
         "reviewAlert": review_alert
     }
+
+
+from pydantic import BaseModel
+import base64
+
+class MediaUploadRequest(BaseModel):
+    session_id: str
+    event_type: str
+    timestamp: float
+    image_base64: str
+
+@app.post("/api/media/upload")
+def upload_media(data: MediaUploadRequest):
+    try:
+        # Create directory if it doesn't exist
+        os.makedirs("data/media", exist_ok=True)
+        
+        # Decode base64 image
+        image_data = base64.b64decode(data.image_base64.split(",")[1] if "," in data.image_base64 else data.image_base64)
+        
+        filename = f"data/media/{data.session_id}_{int(data.timestamp)}_{data.event_type}.jpg"
+        with open(filename, "wb") as img_file:
+            img_file.write(image_data)
+            
+        # Log to events table
+        db = Database(DB_PATH)
+        with sqlite3.connect(db.db_path) as conn:
+            event_id = f"EV-{uuid.uuid4().hex[:8]}"
+            conn.execute(
+                "INSERT INTO events (event_id, session_id, timestamp, event_type, details) VALUES (?, ?, ?, ?, ?)",
+                (event_id, data.session_id, data.timestamp, data.event_type, f"Screenshot saved: {filename}")
+            )
+            
+        return {"status": "success", "filename": filename}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+from fastapi.responses import FileResponse
+
+@app.get("/api/media/{filename}")
+def get_media(filename: str):
+    path = f"data/media/{filename}"
+    if os.path.exists(path):
+        return FileResponse(path)
+    return {"status": "error", "message": "File not found"}

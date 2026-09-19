@@ -60,7 +60,7 @@ export default function TrackPage() {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-sm font-bold text-zinc-900">Response Latency Trend</h2>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-wider mt-1">Response time across sessions</p>
+                <p className="text-xs text-zinc-500 uppercase tracking-wider mt-1">Response time across sessions</p>
               </div>
               <input 
                 type="date" 
@@ -73,14 +73,14 @@ export default function TrackPage() {
             <div className="flex-1 w-full relative">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" />
-                  <XAxis dataKey="session" axisLine={{ stroke: '#e4e4e7' }} tickLine={{ stroke: '#e4e4e7' }} tick={{ fontSize: 12, fill: '#71717a' }} dy={10} />
-                  <YAxis domain={[0, 100]} axisLine={{ stroke: '#e4e4e7' }} tickLine={{ stroke: '#e4e4e7' }} tick={{ fontSize: 12, fill: '#71717a' }} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-zinc-200)" />
+                  <XAxis dataKey="session" axisLine={{ stroke: 'var(--color-zinc-200)' }} tickLine={{ stroke: 'var(--color-zinc-200)' }} tick={{ fontSize: 12, fill: 'var(--color-zinc-500)' }} dy={10} />
+                  <YAxis domain={[0, 100]} axisLine={{ stroke: 'var(--color-zinc-200)' }} tickLine={{ stroke: 'var(--color-zinc-200)' }} tick={{ fontSize: 12, fill: 'var(--color-zinc-500)' }} />
                   <Tooltip 
                     contentStyle={{ borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                    itemStyle={{ color: '#F59E0B', fontWeight: 600 }}
+                    itemStyle={{ color: 'var(--color-warning)', fontWeight: 600 }}
                   />
-                  <Line type="monotone" dataKey="latency" stroke="#F59E0B" strokeWidth={3} dot={{ r: 4, fill: '#F59E0B', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="latency" stroke="var(--color-warning)" strokeWidth={3} dot={{ r: 4, fill: 'var(--color-warning)', strokeWidth: 2, stroke: 'var(--color-white)' }} activeDot={{ r: 6 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -91,7 +91,7 @@ export default function TrackPage() {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-sm font-bold text-zinc-900">Interaction Duration Trend</h2>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-wider mt-1">Interaction duration across sessions</p>
+                <p className="text-xs text-zinc-500 uppercase tracking-wider mt-1">Interaction duration across sessions</p>
               </div>
               <input 
                 type="date" 
@@ -104,14 +104,14 @@ export default function TrackPage() {
             <div className="flex-1 w-full relative">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" />
-                  <XAxis dataKey="session" axisLine={{ stroke: '#e4e4e7' }} tickLine={{ stroke: '#e4e4e7' }} tick={{ fontSize: 12, fill: '#71717a' }} dy={10} />
-                  <YAxis domain={[0, 10]} axisLine={{ stroke: '#e4e4e7' }} tickLine={{ stroke: '#e4e4e7' }} tick={{ fontSize: 12, fill: '#71717a' }} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-zinc-200)" />
+                  <XAxis dataKey="session" axisLine={{ stroke: 'var(--color-zinc-200)' }} tickLine={{ stroke: 'var(--color-zinc-200)' }} tick={{ fontSize: 12, fill: 'var(--color-zinc-500)' }} dy={10} />
+                  <YAxis domain={[0, 10]} axisLine={{ stroke: 'var(--color-zinc-200)' }} tickLine={{ stroke: 'var(--color-zinc-200)' }} tick={{ fontSize: 12, fill: 'var(--color-zinc-500)' }} />
                   <Tooltip 
                     contentStyle={{ borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                    itemStyle={{ color: '#176B9C', fontWeight: 600 }}
+                    itemStyle={{ color: 'var(--color-brand)', fontWeight: 600 }}
                   />
-                  <Line type="monotone" dataKey="duration" stroke="#176B9C" strokeWidth={3} dot={{ r: 4, fill: '#176B9C', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="duration" stroke="var(--color-brand)" strokeWidth={3} dot={{ r: 4, fill: 'var(--color-brand)', strokeWidth: 2, stroke: 'var(--color-white)' }} activeDot={{ r: 6 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>

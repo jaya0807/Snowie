@@ -1,4 +1,7 @@
-"use client";
+with open("frontend/src/app/(dashboard)/settings/page.tsx", "r") as f:
+    content = f.read()
+
+new_settings_page = """"use client";
 
 import { User, Bell, Shield, Save } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -113,3 +116,7 @@ export default function SettingsView() {
     </div>
   );
 }
+"""
+
+with open("frontend/src/app/(dashboard)/settings/page.tsx", "w") as f:
+    f.write(new_settings_page)
