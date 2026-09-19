@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Play, Sparkles, LineChart, FileText } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { ChildPlayingSticker } from "@/components/illustrations/ChildPlayingSticker";
 
 export default function HowItWorksPage() {
   return (
@@ -52,22 +53,10 @@ export default function HowItWorksPage() {
             <div className="md:w-5/12 pl-0 md:pl-8 flex justify-center md:justify-start order-3">
               <motion.div 
                 initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
-                className="w-full max-w-sm aspect-video bg-white rounded-2xl shadow-sm border border-black/5 overflow-hidden relative group flex items-center justify-center"
+                className="w-full max-w-sm aspect-video bg-indigo-50/50 rounded-3xl shadow-inner border border-black/5 overflow-hidden relative group flex items-center justify-center"
               >
-                {/* Abstract animated game scene */}
-                <div className="absolute inset-0 bg-indigo-50"></div>
-                <motion.div 
-                  animate={{ x: [-50, 50, -50], y: [-20, 20, -20] }}
-                  transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
-                  className="absolute w-20 h-20 bg-brand/20 rounded-full blur-xl"
-                />
-                <motion.div 
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                  className="relative z-10 w-16 h-16 bg-white shadow-xl shadow-brand/20 rounded-full flex items-center justify-center text-brand"
-                >
-                  <Play className="w-6 h-6 translate-x-[2px]" fill="currentColor" />
-                </motion.div>
+                <div className="absolute inset-0 bg-gradient-to-tr from-brand/5 to-transparent"></div>
+                <ChildPlayingSticker />
               </motion.div>
             </div>
           </div>
