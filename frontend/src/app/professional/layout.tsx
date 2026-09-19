@@ -49,17 +49,20 @@ export default function ProfessionalLayout({
         </nav>
         
         <div className="p-4 border-t border-black/5">
-          <Link href="/" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-500 hover:text-danger hover:bg-danger-bg transition-colors">
+          <button
+            onClick={() => logout()}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-500 hover:text-danger hover:bg-danger-bg transition-colors"
+          >
             <LogOut className="w-4 h-4" />
             <span className="text-sm font-medium">Log out</span>
-          </Link>
+          </button>
         </div>
       </aside>
       
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 z-10 relative">
         <header className="h-16 flex items-center justify-between px-6 bg-white border border-black/5 mb-4 rounded-lg mx-3 mt-3 z-10 relative shadow-[0_4px_14px_0_rgba(23,107,156,0.12),0_2px_4px_0_rgba(23,107,156,0.06)]">
-          <h2 className="font-bold text-zinc-800">Welcome, Dr. Sarah Jenkins</h2>
+          <h2 className="font-bold text-zinc-800">Welcome, Dr. {role === "clinician" ? "Jenkins" : "—"}</h2>
           <div className="w-8 h-8 rounded-full bg-brand-light flex items-center justify-center text-brand font-bold text-sm">
             SJ
           </div>
