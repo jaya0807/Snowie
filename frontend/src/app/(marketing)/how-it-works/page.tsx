@@ -17,10 +17,6 @@ export default function HowItWorksPage() {
           animate={{ opacity: 1, y: 0 }} 
           className="max-w-3xl mx-auto text-center mb-20"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand/10 text-brand text-xs font-bold uppercase tracking-widest mb-6">
-            <Sparkles className="w-3.5 h-3.5" />
-            Simple Process
-          </div>
           <h1 className="text-4xl md:text-5xl font-extrabold text-marketing-dark tracking-tight leading-tight mb-6">
             How <span className="text-brand">Snowie</span> Works
           </h1>
