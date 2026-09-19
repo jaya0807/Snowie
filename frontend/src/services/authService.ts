@@ -46,6 +46,39 @@ export function clearStoredSession() {
   localStorage.removeItem(USER_KEY);
 }
 
+export interface ParentSignupCredentials {
+  fullName: string;
+  email: string;
+  password?: string;
+  relationship: string;
+  childName: string;
+  childDob: string;
+  childGender: string;
+}
+
+export async function parentSignup(
+  credentials: ParentSignupCredentials
+): Promise<{ success: boolean; user?: AuthUser; error?: string }> {
+  try {
+    const res = await apiRequest("/api/auth/parent/signup", {
+      method: "POST",
+      body: JSON.stringify(credentials),
+    });
+
+    if (res.status === 200 && res.data && res.data.status === "success") {
+      const user: ParentUser = { ...res.data.user, role: "parent" };
+      setStoredSession(res.data.user.token, user);
+      return { success: true, user };
+    }
+    
+    return { success: false, error: res.error || res.data?.message || "Signup failed" };
+
+  } catch (error: any) {
+    console.error("Signup failed:", error);
+    return { success: false, error: "Network error. Please try again." };
+  }
+}
+
 export async function parentLogin(
   credentials: ParentLoginCredentials
 ): Promise<{ success: boolean; user?: AuthUser; error?: string }> {

@@ -742,6 +742,62 @@ class ParentLoginRequest(BaseModel):
 
 import hashlib
 
+class ParentSignupRequest(BaseModel):
+    fullName: str
+    email: str
+    password: str
+    relationship: str
+    childName: str
+    childDob: str
+    childGender: str
+
+@app.post("/api/auth/parent/signup")
+def parent_signup_endpoint(data: ParentSignupRequest):
+    email = data.email.strip()
+    if not email:
+        return {"status": "error", "message": "Email is required"}
+    
+    db = Database(DB_PATH)
+    
+    # Check if user already exists
+    existing_user = db.get_user_by_email(email)
+    if existing_user:
+        return {"status": "error", "message": "User with this email already exists"}
+        
+    # Hash password
+    password_hash = hashlib.sha256(data.password.encode()).hexdigest()
+    
+    # Create user
+    user_id = "U-" + str(uuid.uuid4())[:8]
+    db.create_user(user_id, email, password_hash, data.fullName, "parent")
+    
+    # Calculate age roughly from DOB (YYYY-MM-DD)
+    try:
+        birth_year = int(data.childDob.split('-')[0])
+        import datetime
+        current_year = datetime.datetime.now().year
+        age = current_year - birth_year
+    except:
+        age = 6
+        
+    # Create participant (child)
+    child_id = "P-" + str(uuid.uuid4())[:8]
+    db.create_participant(child_id, data.childName, age, data.fullName, user_id)
+    
+    children = db.get_children_for_parent(user_id)
+    
+    return {
+        "status": "success",
+        "user": {
+            "role":     "parent",
+            "email":    email,
+            "name":     data.fullName,
+            "token":    f"auth_tok_{user_id}_{int(time.time())}",
+            "children": children,
+        },
+    }
+
+
 @app.post("/api/auth/parent/login")
 def parent_login_endpoint(data: ParentLoginRequest):
     email = data.email.strip()

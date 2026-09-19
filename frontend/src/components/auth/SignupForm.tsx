@@ -16,6 +16,7 @@ interface SignupFormProps {
 
 export function SignupForm({ onBack, onLoginClick }: SignupFormProps) {
   const router = useRouter();
+  const { signupParent } = useAuth();
   
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -58,8 +59,20 @@ export function SignupForm({ onBack, onLoginClick }: SignupFormProps) {
     setIsLoading(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      router.push("/dashboard");
+      const res = await signupParent({
+        fullName,
+        email,
+        password,
+        relationship,
+        childName,
+        childDob,
+        childGender
+      });
+      if (res.success) {
+        router.push("/dashboard");
+      } else {
+        setErrorMessage(res.error || "Oops! We couldn't create your account right now. Please try again.");
+      }
     } catch {
       setErrorMessage("Oops! We couldn't create your account right now. Please try again.");
     } finally {
