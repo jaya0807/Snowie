@@ -5,7 +5,6 @@ import { Footer } from "@/components/layout/Footer";
 import { Play, Sparkles, LineChart, FileText } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ChildPlayingSticker } from "@/components/illustrations/ChildPlayingSticker";
 
 export default function HowItWorksPage() {
   return (
@@ -53,10 +52,44 @@ export default function HowItWorksPage() {
             <div className="md:w-5/12 pl-0 md:pl-8 flex justify-center md:justify-start order-3">
               <motion.div 
                 initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
-                className="w-full max-w-sm aspect-video bg-indigo-50/50 rounded-3xl shadow-inner border border-black/5 overflow-hidden relative group flex items-center justify-center"
+                className="w-full max-w-sm aspect-video bg-white rounded-2xl shadow-sm border border-black/5 overflow-hidden relative group flex items-center justify-center"
               >
-                <div className="absolute inset-0 bg-gradient-to-tr from-brand/5 to-transparent"></div>
-                <ChildPlayingSticker />
+                {/* Abstract geometric animation (circles and ovals) */}
+                <div className="absolute inset-0 bg-zinc-50/50"></div>
+                
+                <motion.div 
+                  animate={{ rotate: 360 }}
+                  transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+                  className="absolute inset-0 flex items-center justify-center"
+                >
+                  <motion.div 
+                    animate={{ scale: [1, 1.2, 1], borderRadius: ["50%", "40%", "50%"] }}
+                    transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                    className="absolute w-32 h-40 bg-brand/10 blur-xl -ml-20 -mt-10"
+                  />
+                  <motion.div 
+                    animate={{ scale: [1, 1.5, 1], borderRadius: ["40%", "50%", "40%"] }}
+                    transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 1 }}
+                    className="absolute w-40 h-24 bg-orange-400/10 blur-xl ml-20 mt-10"
+                  />
+                </motion.div>
+
+                <motion.div 
+                  animate={{ y: [-5, 5, -5] }}
+                  transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                  className="relative z-10 w-16 h-16 bg-white shadow-xl shadow-brand/10 rounded-full flex items-center justify-center text-brand"
+                >
+                  <Play className="w-6 h-6 translate-x-[2px]" fill="currentColor" />
+                </motion.div>
+                
+                {/* Orbital dots */}
+                <motion.div 
+                  animate={{ rotate: 360 }}
+                  transition={{ repeat: Infinity, duration: 10, ease: "linear" }}
+                  className="absolute z-0 w-32 h-32 rounded-full border border-zinc-200/50 border-dashed"
+                >
+                  <div className="absolute -top-1.5 left-1/2 w-3 h-3 bg-brand rounded-full shadow-sm shadow-brand/30" />
+                </motion.div>
               </motion.div>
             </div>
           </div>
