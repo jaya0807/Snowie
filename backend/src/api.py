@@ -741,6 +741,35 @@ class ParentLoginRequest(BaseModel):
 
 
 import hashlib
+import boto3
+from botocore.exceptions import ClientError
+
+class PresignedUrlRequest(BaseModel):
+    filename: str
+    filetype: str
+
+@app.post("/api/auth/presigned-url")
+def get_presigned_url(data: PresignedUrlRequest):
+    s3_client = boto3.client('s3', region_name='us-east-1')
+    bucket_name = open('s3_bucket.txt').read().strip() if os.path.exists('s3_bucket.txt') else "sih-child-photos-d1b2245b"
+    
+    unique_filename = f"{uuid.uuid4().hex}_{data.filename}"
+    
+    try:
+        response = s3_client.generate_presigned_url('put_object',
+                                                    Params={'Bucket': bucket_name,
+                                                            'Key': unique_filename,
+                                                            'ContentType': data.filetype},
+                                                    ExpiresIn=3600)
+    except ClientError as e:
+        return {"status": "error", "message": str(e)}
+
+    return {
+        "status": "success",
+        "url": response,
+        "key": unique_filename,
+        "public_url": f"https://{bucket_name}.s3.amazonaws.com/{unique_filename}"
+    }
 
 class ParentSignupRequest(BaseModel):
     fullName: str
@@ -750,6 +779,10 @@ class ParentSignupRequest(BaseModel):
     childName: str
     childDob: str
     childGender: str
+    photoFront: Optional[str] = None
+    photoRear: Optional[str] = None
+    photoLeft: Optional[str] = None
+    photoRight: Optional[str] = None
 
 @app.post("/api/auth/parent/signup")
 def parent_signup_endpoint(data: ParentSignupRequest):
@@ -782,7 +815,13 @@ def parent_signup_endpoint(data: ParentSignupRequest):
         
     # Create participant (child)
     child_id = "P-" + str(uuid.uuid4())[:8]
-    db.create_participant(child_id, data.childName, age, data.fullName, user_id)
+    photos = {
+        'front': data.photoFront,
+        'rear': data.photoRear,
+        'left': data.photoLeft,
+        'right': data.photoRight
+    }
+    db.create_participant(child_id, data.childName, age, data.fullName, user_id, photos)
     
     children = db.get_children_for_parent(user_id)
     

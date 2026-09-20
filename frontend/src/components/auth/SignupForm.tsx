@@ -59,6 +59,27 @@ export function SignupForm({ onBack, onLoginClick }: SignupFormProps) {
     setIsLoading(true);
 
     try {
+      // 1. Upload photos to S3 first if they exist
+      const uploadPhoto = async (file: File | null) => {
+        if (!file) return undefined;
+        const presigned = await getS3PresignedUrl(file.name, file.type);
+        if (presigned) {
+          await fetch(presigned.url, {
+            method: "PUT",
+            body: file,
+            headers: { "Content-Type": file.type }
+          });
+          return presigned.public_url;
+        }
+        return undefined;
+      };
+
+      const photoFront = await uploadPhoto(childPhotoFront);
+      const photoRear = await uploadPhoto(childPhotoRear);
+      const photoLeft = await uploadPhoto(childPhotoLeft);
+      const photoRight = await uploadPhoto(childPhotoRight);
+
+      // 2. Submit data to our backend
       const res = await signupParent({
         fullName,
         email,
@@ -66,7 +87,11 @@ export function SignupForm({ onBack, onLoginClick }: SignupFormProps) {
         relationship,
         childName,
         childDob,
-        childGender
+        childGender,
+        photoFront,
+        photoRear,
+        photoLeft,
+        photoRight
       });
       if (res.success) {
         router.push("/dashboard");

@@ -10,6 +10,7 @@ class Database:
     def __init__(self, db_path: str = "observe.db"):
         self.db_path = db_path
         self._init_db()
+        self._migrate_db()
 
     def _init_db(self):
         with sqlite3.connect(self.db_path) as conn:
@@ -278,17 +279,28 @@ class Database:
                 (user_id, email, password_hash, name, role)
             )
 
+    def _migrate_db(self):
+        with sqlite3.connect(self.db_path) as conn:
+            try:
+                conn.execute("ALTER TABLE participants ADD COLUMN photo_front TEXT")
+                conn.execute("ALTER TABLE participants ADD COLUMN photo_rear TEXT")
+                conn.execute("ALTER TABLE participants ADD COLUMN photo_left TEXT")
+                conn.execute("ALTER TABLE participants ADD COLUMN photo_right TEXT")
+            except sqlite3.OperationalError:
+                pass # Columns already exist
+                
     def get_children_for_parent(self, parent_id: str) -> list:
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             rows = conn.execute("SELECT participant_id as id, name, age FROM participants WHERE parent_id=?", (parent_id,)).fetchall()
             return [dict(r) for r in rows]
 
-    def create_participant(self, participant_id: str, name: str, age: int, parent_name: str, parent_id: str):
+    def create_participant(self, participant_id: str, name: str, age: int, parent_name: str, parent_id: str, photos: dict = None):
+        if photos is None: photos = {}
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
-                "INSERT INTO participants (participant_id, name, age, created_at, parent_name, parent_id) VALUES (?, ?, ?, ?, ?, ?)",
-                (participant_id, name, age, _time.time(), parent_name, parent_id)
+                "INSERT INTO participants (participant_id, name, age, created_at, parent_name, parent_id, photo_front, photo_rear, photo_left, photo_right) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (participant_id, name, age, _time.time(), parent_name, parent_id, photos.get('front'), photos.get('rear'), photos.get('left'), photos.get('right'))
             )
 
     def get_dashboard_metrics(self, participant_id: str, date: str = None) -> dict:

@@ -54,6 +54,10 @@ export interface ParentSignupCredentials {
   childName: string;
   childDob: string;
   childGender: string;
+  photoFront?: string;
+  photoRear?: string;
+  photoLeft?: string;
+  photoRight?: string;
 }
 
 export async function parentSignup(
@@ -131,5 +135,21 @@ export async function logout(): Promise<void> {
     await apiRequest("/auth/logout", { method: "POST" });
   } catch (e) {
     console.warn("Logout API call failed, continuing local clear");
+  }
+}
+
+export async function getS3PresignedUrl(filename: string, filetype: string): Promise<{ url: string, public_url: string } | null> {
+  try {
+    const res = await apiRequest("/api/auth/presigned-url", {
+      method: "POST",
+      body: JSON.stringify({ filename, filetype }),
+    });
+    if (res.status === 200 && res.data && res.data.status === "success") {
+      return { url: res.data.url, public_url: res.data.public_url };
+    }
+    return null;
+  } catch (e) {
+    console.error("Failed to get presigned URL", e);
+    return null;
   }
 }
