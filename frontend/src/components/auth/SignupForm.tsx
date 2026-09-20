@@ -6,6 +6,7 @@ import { ArrowRight, UserPlus, Baby } from "lucide-react";
 import { LoginCard } from "./LoginCard";
 import { Button } from "@/components/common/Button";
 import { ErrorMessage } from "@/components/common/ErrorMessage";
+import { getS3PresignedUrl } from "@/services/authService";
 import { ParentProfileFields } from "./ParentProfileFields";
 import { ChildProfileFields } from "./ChildProfileFields";
 
