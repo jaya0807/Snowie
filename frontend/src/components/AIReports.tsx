@@ -19,7 +19,7 @@ export function AIReports({ patientId: propPatientId, isClinicianView = false }:
   useEffect(() => {
     if (selectedReportId) {
       setReportDetails(null);
-      fetch(`http://${window.location.hostname}:8000/api/reports/${selectedReportId}`)
+      fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || `http://${window.location.hostname}:8000`}/api/reports/${selectedReportId}`)
         .then(res => res.json())
         .then(json => {
           setReportDetails(json.sections);
@@ -29,7 +29,7 @@ export function AIReports({ patientId: propPatientId, isClinicianView = false }:
   }, [selectedReportId]);
 
   useEffect(() => {
-    let url = `http://${window.location.hostname}:8000/api/reports`;
+    let url = `${process.env.NEXT_PUBLIC_API_BASE_URL || `http://${window.location.hostname}:8000`}/api/reports`;
     if (patientId) {
         url += `?patient_id=${patientId}`;
     }

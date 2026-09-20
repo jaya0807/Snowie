@@ -15,7 +15,7 @@ export default function ProfessionalDashboard() {
   const [filterDate, setFilterDate] = useState(""); // exact date string YYYY-MM-DD
 
   useEffect(() => {
-    fetch(`http://${window.location.hostname}:8000/api/clinician/patients`)
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || `http://${window.location.hostname}:8000`}/api/clinician/patients`)
       .then(res => res.json())
       .then(data => {
         if (data) {

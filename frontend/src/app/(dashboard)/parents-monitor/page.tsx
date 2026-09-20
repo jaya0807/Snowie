@@ -38,7 +38,9 @@ function LiveSessionContent() {
 
   useEffect(() => {
     const connect = () => {
-      const ws = new WebSocket(`ws://${window.location.hostname}:8000/api/ws/session`);
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || `http://${window.location.hostname}:8000`;
+      const wsBase = apiBase.replace("http://", "ws://").replace("https://", "wss://");
+      const ws = new WebSocket(`${wsBase}/api/ws/session`);
       wsRef.current = ws;
 
       ws.onopen = () => setConnected(true);

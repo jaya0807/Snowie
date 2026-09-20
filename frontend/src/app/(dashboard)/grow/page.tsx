@@ -15,7 +15,7 @@ export default function GrowPage() {
 
 
     useEffect(() => {
-    fetch(`http://${window.location.hostname}:8000/api/grow/recommend?patient_id=${patientId}`)
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || `http://${window.location.hostname}:8000`}/api/grow/recommend?patient_id=${patientId}`)
       .then(res => res.json())
       .then(data => {
         if (data.recommendation) {

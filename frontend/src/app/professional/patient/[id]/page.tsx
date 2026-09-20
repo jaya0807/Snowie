@@ -14,7 +14,7 @@ export default function PatientDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-    fetch(`http://${window.location.hostname}:8000/api/clinician/patients`)
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || `http://${window.location.hostname}:8000`}/api/clinician/patients`)
       .then(res => res.json())
       .then(data => {
         if (data && data.length > 0) {

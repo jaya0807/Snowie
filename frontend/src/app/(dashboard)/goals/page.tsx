@@ -9,7 +9,7 @@ export default function GoalsPage() {
   const patientId = user?.children?.[0]?.id || "P1";
 
   useEffect(() => {
-    fetch(`http://${window.location.hostname}:8000/api/grow/goals?patient_id=${patientId}`)
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || `http://${window.location.hostname}:8000`}/api/grow/goals?patient_id=${patientId}`)
       .then(res => res.json())
       .then(data => setGoals(data))
       .catch(err => console.error(err));
