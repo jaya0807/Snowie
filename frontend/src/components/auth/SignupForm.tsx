@@ -7,6 +7,7 @@ import { LoginCard } from "./LoginCard";
 import { Button } from "@/components/common/Button";
 import { ErrorMessage } from "@/components/common/ErrorMessage";
 import { getS3PresignedUrl } from "@/services/authService";
+import { useAuth } from "@/context/AuthContext";
 import { ParentProfileFields } from "./ParentProfileFields";
 import { ChildProfileFields } from "./ChildProfileFields";
 
