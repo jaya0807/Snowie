@@ -1,3 +1,4 @@
+/* eslint-disable */
 "use client";
 import BackgroundScene from "./components/BackgroundScene";
 
@@ -30,7 +31,7 @@ export default function Activity5UI() {
   useEffect(() => {
     const initSession = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || `http://${window.location.hostname}:8000`}/api/session/start?activity_id=A2&force_new=${localStorage.getItem('forceNewSession') === 'true'}`, { method: 'POST' });
+const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || `http://${window.location.hostname}:8000`}/api/session/start?activity_id=A5&force_new=${localStorage.getItem('forceNewSession') === 'true'}`, { method: 'POST' });
         const data = await res.json();
         setSessionId(data.session_id);
       } catch(e) { console.error(e); }

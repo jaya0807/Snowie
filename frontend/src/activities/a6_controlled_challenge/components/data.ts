@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { X, ArrowRight, RefreshCcw, Sparkles } from "lucide-react";

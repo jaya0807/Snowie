@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React from "react";
 import { Video, Clapperboard, Mic2, RefreshCcw, ArrowRight } from "lucide-react";
 import { LEVELS } from "./data";

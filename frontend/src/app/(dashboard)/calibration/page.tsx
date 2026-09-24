@@ -36,7 +36,7 @@ export default function CalibrationPage() {
   };
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:8000/api/ws/capture/test_session");
+    const ws = new WebSocket(`ws://${window.location.hostname}:8000/api/ws/capture/test_session`);
     ws.onerror = (e) => console.warn("Calibration WS Error:", e);
     wsRef.current = ws;
 

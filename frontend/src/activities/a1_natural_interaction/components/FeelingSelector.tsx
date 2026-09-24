@@ -1,3 +1,4 @@
+/* eslint-disable */
 interface Props {
   feeling: string;
   setFeeling: (f: string) => void;

@@ -16,10 +16,10 @@ class ReportGenerator:
         AWS_SECRET_ACCESS_KEY
 
     Optional:
-        BEDROCK_MODEL_ID     — defaults to "anthropic.claude-3-5-haiku-20241022-v1:0"
+        BEDROCK_MODEL_ID     — defaults to "anthropic.claude-haiku-4-5-20251001-v1:0"
     """
 
-    DEFAULT_MODEL = "anthropic.claude-3-5-haiku-20241022-v1:0"
+    DEFAULT_MODEL = "anthropic.claude-haiku-4-5-20251001-v1:0"
 
     def __init__(self):
         self.model_id = os.environ.get("BEDROCK_MODEL_ID", self.DEFAULT_MODEL)
