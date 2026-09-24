@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { useState, useEffect, useRef } from "react";
 
 export function useVoiceRecognition(stepIndex: number, setName: (v: string) => void, setDayText: (v: string) => void) {

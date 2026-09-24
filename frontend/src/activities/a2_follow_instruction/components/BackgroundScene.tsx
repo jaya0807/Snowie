@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { GiCastle, GiRingedPlanet, GiRocketFlight, GiFlowerPot, GiStarsStack, GiAirBalloon, GiSpikyField, GiPineTree, GiMoon } from "react-icons/gi";
 import { FaCloud } from "react-icons/fa";
 

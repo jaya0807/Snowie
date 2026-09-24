@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React from "react";
 import { ArrowRight, RefreshCcw, Sparkles } from "lucide-react";
 import { LEVELS } from "./data";

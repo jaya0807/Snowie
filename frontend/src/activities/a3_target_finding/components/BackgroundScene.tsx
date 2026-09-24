@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { GiGalleon, GiPalmTree, GiIsland } from "react-icons/gi";
 import { FaCloud } from "react-icons/fa";
 

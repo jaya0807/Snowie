@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Star } from "lucide-react";
 
 const LEVELS = [

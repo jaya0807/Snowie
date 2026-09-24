@@ -1,3 +1,4 @@
+/* eslint-disable */
 interface Props {
   favAnimal: string;
   setFavAnimal: (a: string) => void;

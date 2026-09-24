@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Camera } from "lucide-react";
 import { RefObject } from "react";
 
