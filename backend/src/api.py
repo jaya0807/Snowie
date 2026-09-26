@@ -560,16 +560,19 @@ def start_session(activity_id: str, patient_id: str = "P1", force_new: bool = Fa
 
 @app.post("/api/session/end")
 def end_session(session_id: str):
-    if session_id not in active_sessions:
-        return {"error": "Session not found"}
-    runtime = active_sessions.pop(session_id)
-    result = runtime.finish(completion_status="COMPLETED")
-    # Use actual runtime accuracy if available, otherwise 0
-    accuracy = result.get("accuracy") or 0.0
-    response_time = result.get("response_time_sec") or 0.0
-    db = Database(DB_PATH)
-    db.end_session(session_id, time.time(), accuracy, response_time)
-    return {"status": "ended", "result": result}
+    if session_id in active_sessions:
+        runtime = active_sessions.pop(session_id)
+        result = runtime.finish(completion_status="COMPLETED")
+        accuracy = result.get("accuracy") or 0.0
+        response_time = result.get("response_time_sec") or 0.0
+        db = Database(DB_PATH)
+        db.end_session(session_id, time.time(), accuracy, response_time)
+        return {"status": "ended", "result": result}
+    else:
+        # Fallback for new architecture
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute("UPDATE sessions SET end_time=COALESCE(end_time, ?) WHERE session_id=?", (time.time(), session_id))
+        return {"status": "ended", "note": "session closed without runtime"}
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -659,6 +662,8 @@ class A1Submission(BaseModel):
 def submit_a1(data: A1Submission):
     logic = Activity1Logic(DB_PATH)
     result = logic.process_submission(data.session_id, data.dict())
+    db = Database(DB_PATH)
+    db.end_session(data.session_id, time.time(), result.get("accuracy", 0) / 100.0, 0.0)
     return {"status": "success", "accuracy": result["accuracy"]}
 
 
@@ -673,6 +678,8 @@ class A2Submission(BaseModel):
 def submit_a2(data: A2Submission):
     logic = Activity2Logic(DB_PATH)
     result = logic.process_submission(data.session_id, data.dict())
+    db = Database(DB_PATH)
+    db.end_session(data.session_id, time.time(), result.get("accuracy", 0) / 100.0, result.get("avg_latency", 0))
     return {"status": "success", "accuracy": result["accuracy"], "avg_latency": result["avg_latency"]}
 
 
@@ -687,6 +694,8 @@ class A3Submission(BaseModel):
 def submit_a3(data: A3Submission):
     logic = Activity3Logic(DB_PATH)
     result = logic.process_submission(data.session_id, data.dict())
+    db = Database(DB_PATH)
+    db.end_session(data.session_id, time.time(), result.get("accuracy", 0) / 100.0, result.get("avg_latency", 0))
     return {"status": "success", "accuracy": result["accuracy"], "avg_latency": result["avg_latency"]}
 
 
@@ -701,6 +710,8 @@ class A4Submission(BaseModel):
 def submit_a4(data: A4Submission):
     logic = Activity4Logic(DB_PATH)
     result = logic.process_submission(data.session_id, data.dict())
+    db = Database(DB_PATH)
+    db.end_session(data.session_id, time.time(), result.get("accuracy", 0) / 100.0, result.get("avg_latency", 0))
     return {"status": "success", "accuracy": result["accuracy"], "avg_latency": result["avg_latency"]}
 
 
@@ -715,6 +726,8 @@ class A5Submission(BaseModel):
 def submit_a5(data: A5Submission):
     logic = Activity5Logic(DB_PATH)
     result = logic.process_submission(data.session_id, data.dict())
+    db = Database(DB_PATH)
+    db.end_session(data.session_id, time.time(), result.get("accuracy", 0) / 100.0, result.get("avg_latency", 0))
     return {"status": "success", "accuracy": result["accuracy"], "avg_latency": result["avg_latency"]}
 
 
@@ -729,6 +742,8 @@ class A6Submission(BaseModel):
 def submit_a6(data: A6Submission):
     logic = Activity6Logic(DB_PATH)
     result = logic.process_submission(data.session_id, data.dict())
+    db = Database(DB_PATH)
+    db.end_session(data.session_id, time.time(), result.get("accuracy", 0) / 100.0, result.get("avg_latency", 0))
     return {"status": "success", "accuracy": result["accuracy"], "avg_latency": result["avg_latency"]}
 
 

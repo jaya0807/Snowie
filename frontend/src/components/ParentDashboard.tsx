@@ -35,7 +35,7 @@ export function ParentDashboard({ patientId: propPatientId, isClinicianView = fa
     query.append("patient_id", patientId);
     if (selectedDate) query.append("date", selectedDate);
     
-    fetch(`http://${window.location.hostname}:8000/api/dashboard?${query.toString()}`)
+    fetch(`http://${window.location.hostname}:8001/api/dashboard?${query.toString()}`)
       .then(res => res.json())
       .then(json => {
         if (json.stats) {

@@ -144,7 +144,8 @@ export default function HiddenCameraProcessor({
           const meanLY = lY.reduce((a,b)=>a+b)/lY.length;
           const varLY = lY.reduce((acc, v) => acc + (v - meanLY) ** 2, 0) / lY.length;
           const meanSY = lsY.reduce((a,b)=>a+b)/lsY.length;
-          if (meanLY < meanSY && varLY < 0.0005) {
+          // image coords: smaller y is higher. Loosened variance to 0.05 for natural jitter
+          if (meanLY < meanSY && varLY < 0.05) {
               motor.wristPostureEvents += 1;
               motor.lastPostureTime = now;
               motor.newPosture = true;

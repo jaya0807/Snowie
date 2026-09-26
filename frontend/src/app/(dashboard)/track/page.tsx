@@ -12,7 +12,7 @@ export default function TrackPage() {
   const patientId = user?.children?.[0]?.id || "P1";
 
   useEffect(() => {
-    fetch(selectedDate ? `http://${window.location.hostname}:8000/api/track/trends?patient_id=${patientId}&date=${selectedDate}` : `http://${window.location.hostname}:8000/api/track/trends?patient_id=${patientId}`)
+    fetch(selectedDate ? `http://${window.location.hostname}:8001/api/track/trends?patient_id=${patientId}&date=${selectedDate}` : `http://${window.location.hostname}:8001/api/track/trends?patient_id=${patientId}`)
       .then(res => res.json())
       .then(resData => {
         if (resData.history && Array.isArray(resData.history) && resData.history.length > 0) {
