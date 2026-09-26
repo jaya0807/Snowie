@@ -129,7 +129,7 @@ export default function Activity2UI() {
     }
     
     if (quit === true) {
-      router.push("/dashboard");
+      router.push("/child/thank-you");
     } else {
       router.push("/child?activity=A3");
     }

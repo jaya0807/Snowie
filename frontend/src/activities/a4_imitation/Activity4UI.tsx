@@ -146,7 +146,7 @@ export default function Activity4UI() {
       console.error("Failed to submit metrics", e);
     }
     if (quit === true) {
-      router.push("/dashboard");
+      router.push("/child/thank-you");
     } else {
       router.push("/child?activity=A5");
     }

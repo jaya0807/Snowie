@@ -35,7 +35,7 @@ export default function Activity1UI() {
   const [dayText, setDayText] = useState("");
   
   const { isListening, toggleListen } = useVoiceRecognition(stepIndex, setName, setDayText);
-  const handleExit = () => router.push("/dashboard");
+  const handleExit = () => router.push("/child/thank-you");
 
   const handleNextStep = async () => {
     setFeedbackState(null);

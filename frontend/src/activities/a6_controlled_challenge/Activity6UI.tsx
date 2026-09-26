@@ -105,7 +105,7 @@ export default function Activity6UI() {
     } catch (e) {
       console.error("Failed to submit metrics", e);
     }
-    router.push("/dashboard");
+    router.push("/child/thank-you");
   };
 
   const currentLevel = LEVELS[levelIndex];
