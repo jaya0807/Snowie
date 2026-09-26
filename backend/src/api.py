@@ -259,9 +259,12 @@ def get_dashboard_data(patient_id: str = "P1", date: str = None):
     else:
         for i, s in enumerate(reversed(recent), start=1):
             label = f"Session {i}"
+            latency_val = s.get("response_time_sec")
+            if latency_val is not None:
+                latency_val = round(float(latency_val), 1)
             response_latency_data.append({
                 "name":    label,
-                "latency": s.get("response_time_sec"),
+                "latency": latency_val,
             })
             try:
                 start = float(s["start_time"])
@@ -484,7 +487,7 @@ def get_recommendation(patient_id: str = "P1"):
 # Track — Progress Trends
 # ═══════════════════════════════════════════════════════════════
 @app.get("/api/track/trends")
-def get_trends(patient_id: str = "P1", activity_id: str = "A2", date: str = None):
+def get_trends(patient_id: str = "P1", activity_id: str = "all", date: str = None):
     tracker = ProgressTracker(db_path=DB_PATH)
     data = tracker.compute_trends(participant_id=patient_id, activity_id=activity_id)
     
@@ -542,13 +545,8 @@ active_sessions: dict = {}
 def start_session(activity_id: str, patient_id: str = "P1", force_new: bool = False):
     start_time = time.time()
     with sqlite3.connect(DB_PATH) as conn:
-        row = conn.execute("SELECT session_id FROM sessions WHERE participant_id=? ORDER BY start_time DESC LIMIT 1", (patient_id,)).fetchone()
-        if row and not force_new:
-            session_id = row[0]
-        else:
-            count = conn.execute("SELECT COUNT(DISTINCT session_id) FROM sessions").fetchone()[0]
-            session_id = f"sess-{count + 1:02d}"
-            
+        count = conn.execute("SELECT COUNT(DISTINCT session_id) FROM sessions").fetchone()[0]
+        session_id = f"sess-{count + 1:02d}"
     runtime = ActivityRuntime(session_id, activity_id, "instruction_following", "Low")
     runtime.start()
     active_sessions[session_id] = runtime
@@ -599,14 +597,8 @@ class EndSessionReq(BaseModel):
 def api_start_session(req: StartSessionReq):
     start_time = time.time()
     with sqlite3.connect(DB_PATH) as conn:
-        # Check if there is a session today (last 12 hours)
-        row = conn.execute("SELECT session_id, start_time FROM sessions WHERE participant_id=? ORDER BY start_time DESC LIMIT 1", (req.participant_id,)).fetchone()
-        
-        if row and (start_time - float(row[1])) < 43200:
-            session_id = row[0]
-        else:
-            count = conn.execute("SELECT COUNT(DISTINCT session_id) FROM sessions").fetchone()[0]
-            session_id = f"sess-{count + 1:02d}"
+        count = conn.execute("SELECT COUNT(DISTINCT session_id) FROM sessions").fetchone()[0]
+        session_id = f"sess-{count + 1:02d}"
             
     db = Database(DB_PATH)
     db.add_participant(req.participant_id, "Child", 5, start_time)

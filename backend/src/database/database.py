@@ -355,13 +355,13 @@ class Database:
         for row in motor_rows:
             ev_type = row["event_type"]
             cnt = row["cnt"]
-            if ev_type == "hand_flapping":
+            if ev_type == "HAND_FLAPPING":
                 metrics["hand_flapping"] = cnt
                 metrics["motor_events_total"] += cnt
-            elif ev_type == "body_rocking":
+            elif ev_type == "BODY_ROCKING":
                 metrics["body_rocking"] = cnt
                 metrics["motor_events_total"] += cnt
-            elif ev_type == "gaze_aversion":
+            elif ev_type == "GAZE_AVERSION":
                 metrics["aversions"] = cnt
 
         return metrics
