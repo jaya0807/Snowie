@@ -9,10 +9,10 @@ const getApiBaseUrl = (): string => {
     return (
       process.env.NEXT_PUBLIC_API_BASE_URL ||
       (window as any).__ENV__?.VITE_API_BASE_URL ||
-      `http://${window.location.hostname}:8001`
+      `http://${window.location.hostname}:8000`
     );
   }
-  return process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8001";
+  return process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 };
 
 export const API_BASE_URL = getApiBaseUrl();

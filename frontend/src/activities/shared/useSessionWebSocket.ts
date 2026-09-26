@@ -8,7 +8,7 @@ export function useSessionWebSocket(sessionId: string) {
 
   useEffect(() => {
     if (!sessionId) return;
-    const ws = new WebSocket(`ws://${window.location.hostname}:8001/api/ws/capture/${sessionId}`);
+    const ws = new WebSocket(`ws://${window.location.hostname}:8000/api/ws/capture/${sessionId}`);
     wsRef.current = ws;
     ws.onerror = (e) => console.warn("[Tracker] WS error:", e);
 
