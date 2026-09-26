@@ -17,17 +17,27 @@ class ProgressTracker:
         # Accept both db_path and legacy db_connection kwarg
         self.db_path = db_path or db_connection or _DB_DEFAULT
 
-    def compute_trends(self, participant_id: str, activity_id: str) -> dict:
+    def compute_trends(self, participant_id: str, activity_id: str = "all") -> dict:
         """Returns trend data built from real DB sessions."""
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
-            rows = conn.execute(
-                """SELECT session_id, accuracy, response_time_sec, start_time
-                   FROM sessions
-                   WHERE participant_id=? AND activity_id=?
-                   ORDER BY start_time ASC""",
-                (participant_id, activity_id),
-            ).fetchall()
+            if activity_id and activity_id.lower() != "all":
+                rows = conn.execute(
+                    """SELECT session_id, accuracy, response_time_sec, start_time
+                       FROM sessions
+                       WHERE participant_id=? AND activity_id=?
+                       ORDER BY start_time ASC""",
+                    (participant_id, activity_id),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """SELECT session_id, AVG(accuracy) as accuracy, AVG(response_time_sec) as response_time_sec, MIN(start_time) as start_time
+                       FROM sessions
+                       WHERE participant_id=?
+                       GROUP BY session_id
+                       ORDER BY start_time ASC""",
+                    (participant_id,),
+                ).fetchall()
 
         history = [dict(r) for r in rows]
 
@@ -65,11 +75,14 @@ class ProgressTracker:
         # Chart-ready points
         chart_points = []
         for i, h in enumerate(history, start=1):
+            rt = h["response_time_sec"]
+            if rt is not None:
+                rt = round(float(rt), 1)
             chart_points.append({
                 "label": f"Session {i}",
                 "session_id": h["session_id"],
                 "accuracy": h["accuracy"],
-                "response_time_sec": h["response_time_sec"],
+                "response_time_sec": rt,
                 "start_time": h["start_time"],
             })
 

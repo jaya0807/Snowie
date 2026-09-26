@@ -105,7 +105,7 @@ const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || `http://${win
     } catch (e) {
       console.error("Failed to submit metrics", e);
     }
-    router.push("/dashboard");
+    router.push("/child/thank-you");
   };
 
   const currentLevel = LEVELS[levelIndex];

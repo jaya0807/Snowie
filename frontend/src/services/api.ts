@@ -54,8 +54,8 @@ export async function apiRequest<T = any>(
         typeof responseData === "object" && responseData?.detail
           ? responseData.detail
           : typeof responseData === "object" && responseData?.message
-          ? responseData.message
-          : "Oops! We encountered an issue. Please try again.";
+            ? responseData.message
+            : "Oops! We encountered an issue. Please try again.";
       return {
         status: response.status,
         error: errorMsg,

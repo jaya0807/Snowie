@@ -124,7 +124,7 @@ const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || `http://${win
     }
     
     if (quit === true) {
-      router.push("/dashboard");
+      router.push("/child/thank-you");
     } else {
       router.push("/child?activity=A4");
     }

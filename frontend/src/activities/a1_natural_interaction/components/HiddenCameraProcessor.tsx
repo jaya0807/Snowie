@@ -74,6 +74,12 @@ export default function HiddenCameraProcessor({
   });
 
   const latestMetrics = useRef<Record<string, any>>({});
+  
+  const faceMeshRef = useRef<any>(null);
+  const poseRef = useRef<any>(null);
+  const handsRef = useRef<any>(null);
+  const cameraRef = useRef<any>(null);
+  const isMounted = useRef(true);
 
   const onPoseResults = (results: any) => {
     if (!results.poseLandmarks || results.poseLandmarks.length < 33) return;
@@ -144,7 +150,8 @@ export default function HiddenCameraProcessor({
           const meanLY = lY.reduce((a,b)=>a+b)/lY.length;
           const varLY = lY.reduce((acc, v) => acc + (v - meanLY) ** 2, 0) / lY.length;
           const meanSY = lsY.reduce((a,b)=>a+b)/lsY.length;
-          if (meanLY < meanSY && varLY < 0.0005) {
+          // image coords: smaller y is higher. Loosened variance to 0.05 for natural jitter
+          if (meanLY < meanSY && varLY < 0.05) {
               motor.wristPostureEvents += 1;
               motor.lastPostureTime = now;
               motor.newPosture = true;
@@ -331,6 +338,7 @@ export default function HiddenCameraProcessor({
   };
 
   useEffect(() => {
+    isMounted.current = true;
     const startTracking = async () => {
       let stream: MediaStream;
       try {
@@ -342,18 +350,21 @@ export default function HiddenCameraProcessor({
       }
 
       const tryInit = () => {
+        if (!isMounted.current) return;
         if (window.FaceMesh && window.Pose && window.Camera && videoRef.current) {
           const faceMesh = new window.FaceMesh({
             locateFile: (f: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}`,
           });
           faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
           faceMesh.onResults(onFaceResults);
+          faceMeshRef.current = faceMesh;
 
           const pose = new window.Pose({
             locateFile: (f: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}`,
           });
           pose.setOptions({ modelComplexity: 1, smoothLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
           pose.onResults(onPoseResults);
+          poseRef.current = pose;
 
           let hands: any = null;
           if (window.Hands) {
@@ -363,6 +374,7 @@ export default function HiddenCameraProcessor({
               });
               hands.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
               hands.onResults(onHandsResults);
+              handsRef.current = hands;
             } catch (e) {
               console.warn("Failed to init Hands:", e);
               hands = null;
@@ -371,7 +383,7 @@ export default function HiddenCameraProcessor({
 
           const camera = new window.Camera(videoRef.current, {
             onFrame: async () => {
-              if (videoRef.current) {
+              if (videoRef.current && isMounted.current) {
                 try { await faceMesh.send({ image: videoRef.current }); } catch (e) {}
                 try { await pose.send({ image: videoRef.current }); } catch (e) {}
                 if (hands) {
@@ -382,6 +394,7 @@ export default function HiddenCameraProcessor({
             width: 320,
             height: 240,
           });
+          cameraRef.current = camera;
           camera.start().catch((e: any) => console.warn("[Tracker] Camera start error:", e));
         } else {
           setTimeout(tryInit, 500);
@@ -393,6 +406,19 @@ export default function HiddenCameraProcessor({
     startTracking();
 
     return () => {
+      isMounted.current = false;
+      if (cameraRef.current) {
+        try { cameraRef.current.stop(); } catch(e) {}
+      }
+      if (faceMeshRef.current) {
+        try { faceMeshRef.current.close(); } catch(e) {}
+      }
+      if (poseRef.current) {
+        try { poseRef.current.close(); } catch(e) {}
+      }
+      if (handsRef.current) {
+        try { handsRef.current.close(); } catch(e) {}
+      }
       if (videoRef.current?.srcObject) {
         (videoRef.current.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
       }

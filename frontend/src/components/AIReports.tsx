@@ -1,193 +1,162 @@
 "use client";
-import { FileText, Download, Printer, Filter, ChevronRight, Activity, Eye, Target, BrainCircuit } from "lucide-react";
+import { FileText, Download, Printer, Filter, ChevronRight, Activity, Eye, Target, BrainCircuit, UserCheck, AlertTriangle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useState, useEffect } from "react";
-import { useToast } from "@/components/ui/Toast";
 
-import { useAuth } from "@/context/AuthContext";
 export function AIReports({ patientId: propPatientId, isClinicianView = false }: { patientId?: string, isClinicianView?: boolean }) {
-  const { user } = useAuth();
-  const patientId = propPatientId || user?.children?.[0]?.id || "P1";
-  const [reports, setReports] = useState<any[]>([]);
-  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
-  const [reportDetails, setReportDetails] = useState<any>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedDate, setSelectedDate] = useState("");
-  const { toast } = useToast();
-
-  useEffect(() => {
-    if (selectedReportId) {
-      setReportDetails(null);
-      fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || `http://${window.location.hostname}:8000`}/api/reports/${selectedReportId}`)
-        .then(res => res.json())
-        .then(json => {
-          setReportDetails(json.sections);
-        })
-        .catch(err => console.error("Failed to fetch report details:", err));
-    }
-  }, [selectedReportId]);
-
-  useEffect(() => {
-    let url = `${process.env.NEXT_PUBLIC_API_BASE_URL || `http://${window.location.hostname}:8000`}/api/reports`;
-    if (patientId) {
-        url += `?patient_id=${patientId}`;
-    }
-    fetch(url)
-      .then(res => res.json())
-      .then(json => {
-        if (json.reports && json.reports.length > 0) {
-          setReports(json.reports);
-          setSelectedReportId(json.reports[0].id);
-        } else {
-          setReports([]);
-          setSelectedReportId(null);
-          setReportDetails(null);
-        }
-      })
-      .catch(err => console.error("Failed to fetch reports:", err));
-  }, [patientId]);
-
-  const filteredReports = reports.filter(report => {
-    const matchesSearch = report.id.toLowerCase().includes(searchQuery.toLowerCase()) || report.type.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesDate = selectedDate ? report.date.startsWith(selectedDate) : true;
-    return matchesSearch && matchesDate;
-  });
+  // Mock data pulling metrics concepts from Parents Monitor
+  const mockReport = {
+    id: "REP-9921",
+    date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+    title: "Comprehensive Session Analysis",
+    patient: "Aarav M.",
+    activity: "Activity 4 (Imitation)",
+    summary: "During this session, Aarav demonstrated excellent baseline attention but exhibited an increase in self-stimulatory behaviors (hand flapping and body rocking) when task complexity increased. Gaze tracking indicates strong central focus during the first 5 minutes, followed by occasional aversions.",
+    metrics: [
+      { label: "Gaze Aversions", value: "14", trend: "up", icon: Eye, color: "text-amber-500", bg: "bg-amber-500/10" },
+      { label: "Hand Flapping", value: "6", trend: "up", icon: Activity, color: "text-red-500", bg: "bg-red-500/10" },
+      { label: "Body Rocking", value: "2", trend: "down", icon: Activity, color: "text-indigo-500", bg: "bg-indigo-500/10" },
+      { label: "Sustained Attention", value: "78%", trend: "up", icon: Target, color: "text-green-500", bg: "bg-green-500/10" },
+    ],
+    insights: [
+      "Blink rate averaged 18 BPM, indicating normal cognitive load.",
+      "Posture remained largely stable (92% stability), with brief erratic head movements detected at minute 6.",
+      "No wrist posture anomalies or rapid flicking events were detected."
+    ],
+    recommendations: [
+      "Introduce a 30-second sensory break before transitioning to higher-complexity tasks.",
+      "Continue monitoring gaze aversions to see if they correlate with specific auditory cues.",
+      "Praise and reinforce periods of stable posture and sustained attention."
+    ]
+  };
 
   return (
-    <div className="space-y-4 h-full flex flex-col">
-      <div className="flex items-center justify-between">
-        <div>
-          {!isClinicianView && (
-            <div className="flex items-center gap-2 text-xs text-zinc-400 font-semibold tracking-wider uppercase mb-1">
-              <span>Dashboard</span>
-              <ChevronRight className="w-3 h-3" />
-              <span className="text-brand">AI Reports</span>
-              {selectedReportId && (
-                <>
-                  <ChevronRight className="w-3 h-3 text-zinc-400" />
-                  <span className="text-brand">{selectedReportId}</span>
-                </>
-              )}
-            </div>
-          )}
-          <h1 className="text-2xl font-bold tracking-tight">AI-Assisted Reports</h1>
+    <div className="w-full flex gap-8">
+      {/* Sidebar: Report History */}
+      <div className="w-1/3 flex flex-col gap-4">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-xl font-bold text-zinc-800">History</h2>
+          <button className="p-2 bg-zinc-100 hover:bg-zinc-200 rounded-lg text-zinc-600 transition-colors">
+            <Filter className="w-5 h-5" />
+          </button>
         </div>
-
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
         
-        {/* Left Column - List */}
-        <div className="flex flex-col h-full pr-2">
-          
-          <div className="flex gap-2 mb-4 shrink-0">
-            <input 
-              type="text" 
-              placeholder="Search..." 
-              className="flex-1 text-sm bg-white border border-zinc-200 rounded-lg px-3 py-2 outline-none focus:border-brand shadow-sm"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <input 
-              type="date" 
-              className="text-sm bg-white border border-zinc-200 rounded-lg px-3 py-2 outline-none cursor-pointer focus:border-brand shadow-sm shrink-0"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-3 overflow-y-auto flex-1 pb-4">
-          {reports.length === 0 && (
-            <div className="p-8 text-center text-zinc-500 bg-white rounded-xl border border-black/5">
-              <FileText className="w-8 h-8 mx-auto mb-3 opacity-20" />
-              <p className="text-sm">No reports available.</p>
-              <p className="text-xs mt-1 opacity-70">Complete an activity session to generate AI reports.</p>
-            </div>
-          )}
-          {filteredReports.map((report) => (
-            <div 
-              key={report.id} 
-              onClick={() => setSelectedReportId(report.id)}
-              className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                selectedReportId === report.id 
-                  ? "bg-white border-brand shadow-lg shadow-brand/10 ring-1 ring-brand/20" 
-                  : "bg-zinc-50 border-black/5 hover:bg-white hover:shadow-sm hover:border-black/10"
-              }`}
-            >
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-xs font-bold text-brand uppercase tracking-wider">{report.id}</span>
-                <span className="text-xs text-zinc-500 font-medium">{report.date}</span>
-              </div>
-              <h3 className="font-semibold text-zinc-900 text-sm mb-1">{report.type}</h3>
-              <div className="flex justify-between items-center mt-3">
-                <Badge variant="outline" className="bg-brand/5 text-brand border-brand/20 text-xs">
-                  {report.status}
-                </Badge>
-                <ChevronRight className={`w-4 h-4 ${selectedReportId === report.id ? "text-brand" : "text-zinc-300"}`} />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        </div>
-        {/* Right Column - Report Preview */}
-        <Card size="sm" className="lg:col-span-2 glass-panel flex flex-col h-full relative overflow-hidden">
-          
-          {/* Header */}
-          <div className="p-5 border-b border-black/5 bg-white shrink-0 flex justify-between items-center">
+        <Card className="p-4 border-l-4 border-l-brand cursor-pointer hover:shadow-md transition-shadow bg-brand-surface">
+          <div className="flex justify-between items-start mb-2">
             <div>
-              <h2 className="font-bold text-zinc-900">Session Report</h2>
-              <p className="text-xs text-zinc-500 mt-1">Generated by Evidence & Report Engine</p>
+              <h3 className="font-bold text-zinc-900">{mockReport.title}</h3>
+              <p className="text-sm text-zinc-500">{mockReport.date}</p>
             </div>
-            <div className="flex gap-2">
-              <button onClick={() => toast("Sending to printer...")} className="p-2 text-zinc-500 hover:text-brand hover:bg-brand/5 rounded-lg transition-colors">
-                <Printer className="w-4 h-4" />
-              </button>
-              <button onClick={() => toast("Report downloaded successfully")} className="p-2 text-zinc-500 hover:text-brand hover:bg-brand/5 rounded-lg transition-colors">
-                <Download className="w-4 h-4" />
-              </button>
-            </div>
+            <Badge className="bg-brand text-white">Latest</Badge>
           </div>
-
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto bg-zinc-50/50 p-6">
-            {reports.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-zinc-500">
-                <BrainCircuit className="w-16 h-16 mb-4 opacity-20" />
-                <h3 className="font-semibold text-zinc-700">Awaiting Session Data</h3>
-                <p className="text-sm mt-2 max-w-sm text-center">Snowie's AI engine will automatically generate clinical reports here once you complete a live session.</p>
-              </div>
-            ) : !reportDetails ? (
-              <div className="h-full flex flex-col items-center justify-center text-zinc-500">
-                <FileText className="w-12 h-12 mb-4 opacity-20 animate-pulse" />
-                <p>Generating evidence-backed report...</p>
-              </div>
-            ) : (
-              <div className="max-w-2xl mx-auto bg-white p-8 shadow-sm border border-black/5 rounded-lg space-y-8">
-                
-                {Object.values(reportDetails).map((section: any, idx) => (
-                  <div key={idx}>
-                    <h3 className="text-sm font-bold text-brand uppercase tracking-wider mb-3 border-b border-brand/10 pb-2">
-                      {section.title}
-                    </h3>
-                    <p className="text-sm text-zinc-700 leading-relaxed">
-                      {section.content}
-                    </p>
-                    {section.system_limitation && (
-                      <div className="mt-4 p-3 bg-warning-bg rounded border border-warning-border">
-                        <p className="text-xs text-warning-dark font-medium italic">
-                          Disclaimer: {section.system_limitation}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-                
-              </div>
-            )}
+          <div className="text-sm font-medium text-brand-dark flex items-center gap-1 mt-3">
+            <Activity className="w-4 h-4" /> {mockReport.activity}
           </div>
         </Card>
+
+        {/* Older mock reports */}
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="p-4 border border-zinc-200 cursor-pointer hover:border-brand/50 transition-colors opacity-70">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <h3 className="font-semibold text-zinc-700">Routine Assessment</h3>
+                <p className="text-sm text-zinc-400">Previous Session</p>
+              </div>
+            </div>
+            <div className="text-sm font-medium text-zinc-500 flex items-center gap-1 mt-3">
+              <Activity className="w-4 h-4" /> Activity {i}
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Main Content: Report Details */}
+      <div className="w-2/3 bg-white rounded-2xl shadow-sm border border-zinc-200 p-8">
+        <div className="flex justify-between items-start mb-8 pb-6 border-b border-zinc-100">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <Badge variant="outline" className="text-brand border-brand/30 bg-brand/5">
+                {mockReport.id}
+              </Badge>
+              <Badge variant="outline" className="text-zinc-500">
+                AI Generated
+              </Badge>
+            </div>
+            <h1 className="text-3xl font-black text-zinc-900 tracking-tight">{mockReport.title}</h1>
+            <p className="text-zinc-500 mt-2 font-medium flex items-center gap-2">
+              <UserCheck className="w-4 h-4" /> Patient: {mockReport.patient} • {mockReport.date}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button className="p-2.5 text-zinc-600 hover:bg-zinc-100 rounded-xl transition-colors border border-zinc-200">
+              <Printer className="w-5 h-5" />
+            </button>
+            <button className="p-2.5 text-brand hover:bg-brand/10 rounded-xl transition-colors border border-brand/20">
+              <Download className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Executive Summary */}
+        <div className="mb-10">
+          <h3 className="text-lg font-bold text-zinc-900 mb-4 flex items-center gap-2">
+            <BrainCircuit className="w-5 h-5 text-brand" /> Executive Summary
+          </h3>
+          <div className="p-5 bg-zinc-50 rounded-xl border border-zinc-100 text-zinc-700 leading-relaxed">
+            {mockReport.summary}
+          </div>
+        </div>
+
+        {/* Live Metrics Grid */}
+        <div className="mb-10">
+          <h3 className="text-lg font-bold text-zinc-900 mb-4 flex items-center gap-2">
+            <Activity className="w-5 h-5 text-brand" /> Captured Metrics
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {mockReport.metrics.map((metric, i) => (
+              <div key={i} className={`p-4 rounded-xl border border-zinc-100 flex flex-col items-center text-center ${metric.bg}`}>
+                <metric.icon className={`w-8 h-8 mb-3 ${metric.color}`} />
+                <span className="text-3xl font-black text-zinc-900 mb-1">{metric.value}</span>
+                <span className="text-xs font-bold text-zinc-600 uppercase tracking-wider">{metric.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Clinical Insights */}
+        <div className="mb-10">
+          <h3 className="text-lg font-bold text-zinc-900 mb-4 flex items-center gap-2">
+            <Eye className="w-5 h-5 text-brand" /> Observation Insights
+          </h3>
+          <ul className="space-y-3">
+            {mockReport.insights.map((insight, i) => (
+              <li key={i} className="flex items-start gap-3 text-zinc-700">
+                <div className="w-1.5 h-1.5 rounded-full bg-brand mt-2.5 flex-shrink-0" />
+                <span className="leading-relaxed">{insight}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Recommendations */}
+        <div>
+          <h3 className="text-lg font-bold text-zinc-900 mb-4 flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-amber-500" /> Recommendations
+          </h3>
+          <div className="bg-amber-50/50 rounded-xl p-5 border border-amber-100">
+            <ul className="space-y-3">
+              {mockReport.recommendations.map((rec, i) => (
+                <li key={i} className="flex items-start gap-3 text-zinc-800 font-medium">
+                  <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                    {i + 1}
+                  </div>
+                  <span className="mt-0.5">{rec}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
       </div>
     </div>
   );

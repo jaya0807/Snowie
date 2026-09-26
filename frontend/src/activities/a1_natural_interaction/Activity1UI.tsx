@@ -1,7 +1,7 @@
 /* eslint-disable */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Mic, X } from "lucide-react";
 import BackgroundScene from "./components/BackgroundScene";
 import HiddenCameraProcessor from "./components/HiddenCameraProcessor";
@@ -35,7 +35,7 @@ export default function Activity1UI() {
   const [dayText, setDayText] = useState("");
   
   const { isListening, toggleListen } = useVoiceRecognition(stepIndex, setName, setDayText);
-  const handleExit = () => router.push("/dashboard");
+  const handleExit = () => router.push("/child/thank-you");
 
   const handleNextStep = async () => {
     setFeedbackState(null);
@@ -86,7 +86,7 @@ export default function Activity1UI() {
         <BackgroundScene />
       </div>
       <div className="fixed top-0 left-0 w-0 h-0 z-0 pointer-events-none">
-        <HiddenCameraProcessor sessionId={sessionId} activityId="A1" />
+        <HiddenCameraProcessor sessionId={sessionId || "mock-session"} activityId="A1" />
       </div>
 
       {/* Close Button */}
