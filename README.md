@@ -16,9 +16,49 @@ Through engaging, game-like activities, Snowie continuously analyzes a child's r
 
 ---
 
-## 📂 Architecture
+## 📂 Architecture & Workflow
 
-Snowie is built with a modern, decoupled architecture:
+Snowie is built with a highly responsive, decoupled architecture to process high-frequency video telemetry in real-time.
+
+```mermaid
+graph TD
+    User((Child Playing))
+    
+    subgraph Frontend [Next.js Application]
+        ChildUI[Interactive Activities UI]
+        ParentUI[Parent / Clinician Dashboard]
+    end
+
+    subgraph Backend [FastAPI Server]
+        WS[WebSocket Engine]
+        MP[MediaPipe Feature Extraction]
+        
+        subgraph AI Core
+            Behavior[Behavioral Classifier\nGaze, Posture, Stimming]
+            Adapt[Adaptation Engine\nZone of Proximal Development]
+        end
+        
+        DB[(SQLite Database)]
+    end
+    
+    subgraph Cloud [AWS]
+        Bedrock[AWS Bedrock\nClaude LLM]
+    end
+
+    User -->|Webcam & Audio| ChildUI
+    ChildUI <-->|Base64 Frames & Telemetry (60fps)| WS
+    
+    WS --> MP
+    MP -->|Eye, Pose, Hand Landmarks| Behavior
+    Behavior --> Adapt
+    Adapt -->|Real-Time Difficulty Adjustments| WS
+    
+    WS -->|Live Telemetry Stream| ParentUI
+    
+    Behavior --> DB
+    DB -->|Session Metrics| Bedrock
+    Bedrock -->|Generates Clinical Reports| ParentUI
+```
 
 - **Frontend (`/frontend`)**: A Next.js 15 (App Router) application built with Tailwind CSS v4. It features a colorful, playful UI for the child activities and a clean, professional dashboard for parents and clinicians.
 - **Backend (`/backend`)**: A FastAPI Python server handling high-frequency WebSocket connections, executing the AI feature extraction pipeline (MediaPipe), and managing the SQLite database.
