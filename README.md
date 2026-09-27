@@ -21,7 +21,7 @@ Through engaging, game-like activities, Snowie continuously analyzes a child's r
 Snowie is built with a highly responsive, decoupled architecture to process high-frequency video telemetry in real-time.
 
 ```mermaid
-graph TD
+graph LR
     User((Child Playing))
     
     subgraph Frontend [Next.js Application]
