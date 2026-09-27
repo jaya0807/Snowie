@@ -40,7 +40,7 @@ graph LR
     classDef logic fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
     classDef cloud fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
 
-    UI[🖥️ Next.js Activities<br>Camera & Audio Capture]:::frontend
+    UI[🖥️ Next.js Activities<br>Camera and Audio Capture]:::frontend
     WS[🌐 WebSocket Server<br>FastAPI 60fps Stream]:::frontend
     
     MP[👁️ MediaPipe Extraction<br>Pose & Landmarks]:::ai
