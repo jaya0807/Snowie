@@ -34,19 +34,19 @@ graph TD
         MP[MediaPipe Feature Extraction]
         
         subgraph AI Core
-            Behavior[Behavioral Classifier\nGaze, Posture, Stimming]
-            Adapt[Adaptation Engine\nZone of Proximal Development]
+            Behavior[Behavioral Classifier - Gaze, Posture, Stimming]
+            Adapt[Adaptation Engine - Zone of Proximal Development]
         end
         
         DB[(SQLite Database)]
     end
     
     subgraph Cloud [AWS]
-        Bedrock[AWS Bedrock\nClaude LLM]
+        Bedrock[AWS Bedrock - Claude LLM]
     end
 
-    User -->|Webcam & Audio| ChildUI
-    ChildUI <-->|Base64 Frames & Telemetry (60fps)| WS
+    User -->|Webcam and Audio| ChildUI
+    ChildUI <-->|Base64 Frames and Telemetry| WS
     
     WS --> MP
     MP -->|Eye, Pose, Hand Landmarks| Behavior
