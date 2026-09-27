@@ -3,7 +3,7 @@
 This document outlines the end-to-end hardware and software pipeline for the Human Following Robot, running strictly via local computer vision and ESP32 hardware actuation.
 
 ```mermaid
-graph TD
+graph LR
     classDef perception fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
     classDef decision fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
     classDef actuation fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
