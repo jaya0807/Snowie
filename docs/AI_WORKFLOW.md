@@ -28,3 +28,39 @@ The extracted raw features are fed into our specialized `behavior/` engines:
 - Upon session completion, `analytics/session_analyzer.py` calculates overall accuracy, latency, and behavioral event totals.
 - **`reporting/prompt_builder.py`**: Constructs a specialized LLM prompt injecting the session metrics.
 - **`reporting/report_generator.py`**: Calls **AWS Bedrock (Claude)** to generate a comprehensive, clinically formatted narrative report outlining the child's performance, behavioral insights, and future therapy recommendations.
+
+---
+
+## 📊 AI Data Pipeline Diagram
+
+```mermaid
+graph LR
+    classDef frontend fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
+    classDef ai fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
+    classDef logic fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
+    classDef cloud fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
+
+    UI[🖥️ Next.js Activities<br>Camera & Audio Capture]:::frontend
+    WS[🌐 WebSocket Server<br>FastAPI 60fps Stream]:::frontend
+    
+    MP[👁️ MediaPipe Extraction<br>Pose & Landmarks]:::ai
+    Beh[🧠 Behavioral Classifier<br>Flapping, Gaze, Posture]:::ai
+    
+    Adapt[🌱 Adaptation Engine<br>Real-time Game Scaling]:::logic
+    Pat[📈 Pattern Engine<br>Session Analytics]:::logic
+    
+    LLM[☁️ AWS Bedrock<br>Claude Haiku]:::cloud
+    Rep[📝 Clinical Report<br>Parent Dashboard]:::cloud
+
+    UI -->|"Base64 Frames"| WS
+    WS --> MP
+    MP -->|"Raw Coordinates"| Beh
+    
+    Beh -->|"Behaviors"| Adapt
+    Adapt -.->|"Difficulty Feedback"| WS
+    WS -.->|"Adjusted Game"| UI
+    
+    Beh -->|"Event Timestamps"| Pat
+    Pat -->|"Metrics"| LLM
+    LLM -->|"Generated Summary"| Rep
+```
