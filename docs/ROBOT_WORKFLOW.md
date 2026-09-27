@@ -16,7 +16,7 @@ graph TD
         Cam[📱 Smartphone IP Webcam<br>Mounted on Robot]
         Laptop[💻 Laptop / Python Vision System]
         MP[🧠 MediaPipe Pose Landmarker Lite]
-        Detect[👤 Human Position & Distance<br>Cx (Horizontal) & Height Ratio]
+        Detect[👤 Human Position and Distance<br>Horizontal Cx and Height Ratio]
     end
 
     Cam -- "Wi-Fi (Requests /shot.jpg)" --> Laptop
@@ -59,7 +59,7 @@ graph TD
         Watchdog([🛡️ Communication Watchdog<br>500 ms Timeout Limit])
     end
 
-    Map -- "Low-Latency Command (e.g., 120,80)" --> UDP
+    Map -- "Low-Latency Command (eg 120 80)" --> UDP
     UDP --> ESP
     
     %% SAFETY LOOP
